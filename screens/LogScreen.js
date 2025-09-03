@@ -18,13 +18,35 @@ export default function LogScreen() {
   const [templates, setTemplates] = useState({});
   const [showAddExercise, setShowAddExercise] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
+  const [showCreateTemplate, setShowCreateTemplate] = useState(false);
   const [currentWorkout, setCurrentWorkout] = useState([]);
+  const [isCreatingWorkout, setIsCreatingWorkout] = useState(false);
+  const [templateName, setTemplateName] = useState('');
   const [newExercise, setNewExercise] = useState({
     name: '',
     sets: '3',
     reps: '10',
     weight: '',
   });
+
+  // Default exercises to choose from
+  const defaultExercises = [
+    'Bench Press',
+    'Squats',
+    'Deadlifts',
+    'Overhead Press',
+    'Barbell Rows',
+    'Pull-ups',
+    'Push-ups',
+    'Lunges',
+    'Bicep Curls',
+    'Tricep Dips',
+    'Planks',
+    'Leg Press',
+    'Lat Pulldowns',
+    'Chest Flyes',
+    'Shoulder Press',
+  ];
 
   // Get current date info
   const today = new Date();
@@ -73,11 +95,25 @@ export default function LogScreen() {
       return;
     }
     
+    // Validate sets and reps are positive numbers
+    const sets = parseInt(newExercise.sets);
+    const reps = parseInt(newExercise.reps);
+    
+    if (isNaN(sets) || sets <= 0) {
+      Alert.alert('Error', 'Please enter a valid number of sets');
+      return;
+    }
+    
+    if (isNaN(reps) || reps <= 0) {
+      Alert.alert('Error', 'Please enter a valid number of reps');
+      return;
+    }
+    
     const exercise = {
-      id: Date.now(),
+      id: Date.now() + Math.random(), // Ensure unique ID
       name: newExercise.name.trim(),
-      sets: parseInt(newExercise.sets) || 3,
-      reps: parseInt(newExercise.reps) || 10,
+      sets: sets,
+      reps: reps,
       weight: newExercise.weight.trim() || 'Body Weight',
     };
     
@@ -96,10 +132,34 @@ export default function LogScreen() {
       return;
     }
     
+    // Validate that exercises have required fields
+    const incompleteExercises = currentWorkout.filter(ex => !ex.sets || !ex.reps);
+    if (incompleteExercises.length > 0) {
+      Alert.alert('Error', 'Please fill in sets and reps for all exercises');
+      return;
+    }
+    
+    // Validate that sets and reps are positive numbers
+    const invalidExercises = currentWorkout.filter(ex => {
+      const sets = parseInt(ex.sets);
+      const reps = parseInt(ex.reps);
+      return isNaN(sets) || sets <= 0 || isNaN(reps) || reps <= 0;
+    });
+    
+    if (invalidExercises.length > 0) {
+      Alert.alert('Error', 'Please ensure all exercises have valid sets and reps (positive numbers)');
+      return;
+    }
+    
     const dateKey = `${currentYear}-${currentMonth + 1}-${selectedDate.getDate()}`;
     const newWorkout = {
       id: Date.now(),
-      exercises: currentWorkout,
+      exercises: currentWorkout.map(ex => ({
+        ...ex,
+        sets: parseInt(ex.sets),
+        reps: parseInt(ex.reps),
+        weight: ex.weight || 'Body Weight',
+      })),
       notes: '',
       date: selectedDate.toISOString(),
     };
@@ -110,6 +170,7 @@ export default function LogScreen() {
     }));
     
     setCurrentWorkout([]);
+    setIsCreatingWorkout(false);
     Alert.alert('Success', 'Workout saved successfully!');
   };
 
@@ -119,37 +180,113 @@ export default function LogScreen() {
       return;
     }
     
-    Alert.prompt(
-      'Save Template',
-      'Enter a name for this workout template:',
-      (templateName) => {
-        if (templateName && templateName.trim()) {
-          const template = {
-            id: Date.now(),
-            name: templateName.trim(),
-            exercises: currentWorkout,
-            createdAt: new Date().toISOString(),
-          };
-          
-          setTemplates(prev => ({
-            ...prev,
-            [template.id]: template,
-          }));
-          
-          Alert.alert('Success', 'Template saved successfully!');
-        }
-      }
-    );
+    setTemplateName('');
+    setShowCreateTemplate(true);
+  };
+
+  const createTemplate = () => {
+    if (!templateName.trim()) {
+      Alert.alert('Error', 'Please enter a template name');
+      return;
+    }
+    
+    const template = {
+      id: Date.now(),
+      name: templateName.trim(),
+      exercises: currentWorkout.map(ex => ({ ...ex })),
+      createdAt: new Date().toISOString(),
+    };
+    
+    setTemplates(prev => ({
+      ...prev,
+      [template.id]: template,
+    }));
+    
+    setShowCreateTemplate(false);
+    setTemplateName('');
+    Alert.alert('Success', 'Template saved successfully!');
   };
 
   const loadTemplate = (template) => {
     setCurrentWorkout(template.exercises.map(ex => ({ ...ex, id: Date.now() + Math.random() })));
+    setIsCreatingWorkout(true);
     setShowTemplates(false);
   };
 
-  const startNewWorkout = () => {
+  const deleteTemplate = (templateId) => {
+    Alert.alert(
+      'Delete Template',
+      'Are you sure you want to delete this template?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            setTemplates(prev => {
+              const newTemplates = { ...prev };
+              delete newTemplates[templateId];
+              return newTemplates;
+            });
+          },
+        },
+      ]
+    );
+  };
+
+  const startFromScratch = () => {
     setCurrentWorkout([]);
-    setShowTemplates(true);
+    setIsCreatingWorkout(true);
+    setShowTemplates(false);
+  };
+
+
+
+  const startNewWorkout = () => {
+    // Always start with empty workout, show template modal only if templates exist
+    setCurrentWorkout([]);
+    if (Object.values(templates).length > 0) {
+      setShowTemplates(true);
+    } else {
+      setShowTemplates(false);
+      setIsCreatingWorkout(true);
+    }
+  };
+
+  const addDefaultExercise = (exerciseName) => {
+    const exercise = {
+      id: Date.now() + Math.random(),
+      name: exerciseName,
+      sets: '',
+      reps: '',
+      weight: '',
+    };
+    
+    setCurrentWorkout(prev => [...prev, exercise]);
+  };
+
+  const updateExerciseField = (exerciseId, field, value) => {
+    setCurrentWorkout(prev => 
+      prev.map(ex => 
+        ex.id === exerciseId 
+          ? { ...ex, [field]: value }
+          : ex
+      )
+    );
+  };
+
+  // Handle navigation month changes
+  const changeMonth = (direction) => {
+    const newDate = new Date(selectedDate);
+    if (direction === 'next') {
+      newDate.setMonth(newDate.getMonth() + 1);
+    } else {
+      newDate.setMonth(newDate.getMonth() - 1);
+    }
+    setSelectedDate(newDate);
   };
 
   const getMonthName = (month) => {
@@ -173,9 +310,21 @@ export default function LogScreen() {
       <ScrollView style={styles.scrollView}>
         {/* Calendar Header */}
         <View style={styles.calendarHeader}>
+          <TouchableOpacity 
+            style={styles.monthNavButton} 
+            onPress={() => changeMonth('prev')}
+          >
+            <Text style={styles.monthNavButtonText}>‹</Text>
+          </TouchableOpacity>
           <Text style={styles.monthYear}>
             {getMonthName(currentMonth)} {currentYear}
           </Text>
+          <TouchableOpacity 
+            style={styles.monthNavButton} 
+            onPress={() => changeMonth('next')}
+          >
+            <Text style={styles.monthNavButtonText}>›</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Calendar Grid */}
@@ -236,9 +385,17 @@ export default function LogScreen() {
         <View style={styles.workoutSection}>
           <View style={styles.workoutHeader}>
             <Text style={styles.workoutTitle}>Workout Log</Text>
-            {!selectedWorkout && (
+            {!selectedWorkout && !isCreatingWorkout && (
               <TouchableOpacity style={styles.addButton} onPress={startNewWorkout}>
                 <Text style={styles.addButtonText}>+ New Workout</Text>
+              </TouchableOpacity>
+            )}
+            {isCreatingWorkout && (
+              <TouchableOpacity style={styles.cancelWorkoutButton} onPress={() => {
+                setIsCreatingWorkout(false);
+                setCurrentWorkout([]);
+              }}>
+                <Text style={styles.cancelWorkoutButtonText}>Cancel</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -261,9 +418,27 @@ export default function LogScreen() {
                 </View>
               )}
             </View>
-          ) : currentWorkout.length > 0 ? (
+          ) : isCreatingWorkout ? (
             <View style={styles.workoutCard}>
-              <Text style={styles.workoutDate}>Building Workout</Text>
+              <Text style={styles.workoutDate}>Workout</Text>
+              
+              {/* Default Exercise Selection */}
+              <View style={styles.exerciseSelection}>
+                <Text style={styles.exerciseSelectionTitle}>Add Exercises:</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.exerciseScroll}>
+                  {defaultExercises.map((exerciseName) => (
+                    <TouchableOpacity
+                      key={exerciseName}
+                      style={styles.exerciseChip}
+                      onPress={() => addDefaultExercise(exerciseName)}
+                    >
+                      <Text style={styles.exerciseChipText}>{exerciseName}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+
+              {/* Current Exercises with Editable Fields */}
               {currentWorkout.map((exercise) => (
                 <View key={exercise.id} style={styles.exerciseItem}>
                   <View style={styles.exerciseHeader}>
@@ -275,15 +450,46 @@ export default function LogScreen() {
                       <Text style={styles.removeButtonText}>×</Text>
                     </TouchableOpacity>
                   </View>
-                  <Text style={styles.exerciseDetails}>
-                    {exercise.sets} sets × {exercise.reps} reps @ {exercise.weight}
-                  </Text>
+                  
+                  <View style={styles.exerciseFields}>
+                    <View style={styles.fieldGroup}>
+                      <Text style={styles.fieldLabel}>Sets</Text>
+                      <TextInput
+                        style={styles.fieldInput}
+                        placeholder="3"
+                        value={exercise.sets}
+                        onChangeText={(text) => updateExerciseField(exercise.id, 'sets', text)}
+                        keyboardType="numeric"
+                      />
+                    </View>
+                    
+                    <View style={styles.fieldGroup}>
+                      <Text style={styles.fieldLabel}>Reps</Text>
+                      <TextInput
+                        style={styles.fieldInput}
+                        placeholder="10"
+                        value={exercise.reps}
+                        onChangeText={(text) => updateExerciseField(exercise.id, 'reps', text)}
+                        keyboardType="numeric"
+                      />
+                    </View>
+                    
+                    <View style={styles.fieldGroup}>
+                      <Text style={styles.fieldLabel}>Weight</Text>
+                      <TextInput
+                        style={styles.fieldInput}
+                        placeholder="135 lbs"
+                        value={exercise.weight}
+                        onChangeText={(text) => updateExerciseField(exercise.id, 'weight', text)}
+                      />
+                    </View>
+                  </View>
                 </View>
               ))}
               
               <View style={styles.workoutActions}>
                 <TouchableOpacity style={styles.addExerciseButton} onPress={() => setShowAddExercise(true)}>
-                  <Text style={styles.addExerciseButtonText}>+ Add Exercise</Text>
+                  <Text style={styles.addExerciseButtonText}>+ Custom Exercise</Text>
                 </TouchableOpacity>
                 
                 <View style={styles.saveActions}>
@@ -379,19 +585,18 @@ export default function LogScreen() {
         animationType="slide"
         transparent={true}
         onRequestClose={() => setShowTemplates(false)}
+
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Choose Template</Text>
             
             <TouchableOpacity 
-              style={styles.templateOption}
-              onPress={() => {
-                setCurrentWorkout([]);
-                setShowTemplates(false);
-              }}
+              style={[styles.templateOption, styles.startFromScratchOption]}
+              onPress={startFromScratch}
+              activeOpacity={0.7}
             >
-              <Text style={styles.templateOptionText}>Start from scratch</Text>
+              <Text style={[styles.templateOptionText, styles.startFromScratchText]}>Start from scratch</Text>
             </TouchableOpacity>
             
             {Object.values(templates).length > 0 ? (
@@ -399,15 +604,24 @@ export default function LogScreen() {
                 data={Object.values(templates)}
                 keyExtractor={(item) => item.id.toString()}
                 renderItem={({ item }) => (
-                  <TouchableOpacity 
-                    style={styles.templateOption}
-                    onPress={() => loadTemplate(item)}
-                  >
-                    <Text style={styles.templateOptionText}>{item.name}</Text>
-                    <Text style={styles.templateExerciseCount}>
-                      {item.exercises.length} exercises
-                    </Text>
-                  </TouchableOpacity>
+                  <View style={styles.templateOptionContainer}>
+                    <TouchableOpacity 
+                      style={styles.templateOption}
+                      onPress={() => loadTemplate(item)}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.templateOptionText}>{item.name}</Text>
+                      <Text style={styles.templateExerciseCount}>
+                        {item.exercises.length} exercises
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity 
+                      style={styles.deleteTemplateButton}
+                      onPress={() => deleteTemplate(item.id)}
+                    >
+                      <Text style={styles.deleteTemplateButtonText}>×</Text>
+                    </TouchableOpacity>
+                  </View>
                 )}
               />
             ) : (
@@ -417,9 +631,57 @@ export default function LogScreen() {
             <TouchableOpacity 
               style={styles.cancelButton} 
               onPress={() => setShowTemplates(false)}
+              activeOpacity={0.7}
             >
               <Text style={styles.cancelButtonText}>Cancel</Text>
             </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Create Template Modal */}
+      <Modal
+        visible={showCreateTemplate}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowCreateTemplate(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Create Template</Text>
+            
+            <TextInput
+              style={styles.input}
+              placeholder="Enter template name (e.g., 'Push Day', 'Leg Day')"
+              value={templateName}
+              onChangeText={setTemplateName}
+              autoFocus={true}
+            />
+            
+            <Text style={styles.templatePreviewTitle}>Template Preview:</Text>
+            <View style={styles.templatePreview}>
+              {currentWorkout.map((exercise, index) => (
+                <Text key={index} style={styles.templatePreviewItem}>
+                  • {exercise.name} ({exercise.sets || '?'} sets × {exercise.reps || '?'} reps)
+                </Text>
+              ))}
+            </View>
+            
+            <View style={styles.modalActions}>
+              <TouchableOpacity 
+                style={styles.cancelButton} 
+                onPress={() => setShowCreateTemplate(false)}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.addButton} 
+                onPress={createTemplate}
+              >
+                <Text style={styles.addButtonText}>Create Template</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
@@ -437,7 +699,22 @@ const styles = StyleSheet.create({
   },
   calendarHeader: {
     padding: 20,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
+  },
+  monthNavButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#3498db',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  monthNavButtonText: {
+    color: '#fff',
+    fontSize: 20,
+    fontWeight: 'bold',
   },
   monthYear: {
     fontSize: 24,
@@ -547,6 +824,17 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   addButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  cancelWorkoutButton: {
+    backgroundColor: '#e74c3c',
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  cancelWorkoutButtonText: {
     color: '#fff',
     fontWeight: '600',
     fontSize: 14,
@@ -706,6 +994,7 @@ const styles = StyleSheet.create({
     padding: 20,
     width: '90%',
     maxHeight: '80%',
+    minHeight: 200,
   },
   modalTitle: {
     fontSize: 20,
@@ -754,21 +1043,49 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 8,
-    flex: 0.48,
     alignItems: 'center',
+    marginTop: 15,
   },
   cancelButtonText: {
     color: '#fff',
     fontWeight: '600',
     fontSize: 16,
   },
+  templateOptionContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
   templateOption: {
     backgroundColor: '#f8f9fa',
     padding: 15,
     borderRadius: 8,
-    marginBottom: 10,
     borderWidth: 1,
     borderColor: '#ecf0f1',
+    minHeight: 50,
+    justifyContent: 'center',
+    flex: 1,
+    marginRight: 10,
+  },
+  deleteTemplateButton: {
+    backgroundColor: '#e74c3c',
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  deleteTemplateButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  startFromScratchOption: {
+    backgroundColor: '#3498db',
+    borderColor: '#3498db',
+  },
+  startFromScratchText: {
+    color: '#fff',
   },
   templateOptionText: {
     fontSize: 16,
@@ -786,5 +1103,74 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginVertical: 20,
     fontStyle: 'italic',
+  },
+  templatePreviewTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#2c3e50',
+    marginTop: 15,
+    marginBottom: 10,
+  },
+  templatePreview: {
+    backgroundColor: '#f8f9fa',
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 20,
+    maxHeight: 150,
+  },
+  templatePreviewItem: {
+    fontSize: 14,
+    color: '#7f8c8d',
+    marginBottom: 5,
+  },
+  exerciseSelection: {
+    marginBottom: 20,
+  },
+  exerciseSelectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#2c3e50',
+    marginBottom: 10,
+  },
+  exerciseScroll: {
+    flexDirection: 'row',
+  },
+  exerciseChip: {
+    backgroundColor: '#3498db',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginRight: 8,
+    marginBottom: 8,
+  },
+  exerciseChipText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  exerciseFields: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 10,
+  },
+  fieldGroup: {
+    flex: 1,
+    marginHorizontal: 4,
+  },
+  fieldLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#7f8c8d',
+    marginBottom: 4,
+    textAlign: 'center',
+  },
+  fieldInput: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 6,
+    padding: 8,
+    fontSize: 14,
+    textAlign: 'center',
+    backgroundColor: '#fff',
   },
 });

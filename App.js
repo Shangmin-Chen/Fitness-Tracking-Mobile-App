@@ -43,6 +43,8 @@ export default function App() {
           headerTitleStyle: {
             fontWeight: 'bold',
           },
+          // Ensure proper screen behavior
+          unmountOnBlur: false,
         })}
       >
         <Tab.Screen 
@@ -50,6 +52,7 @@ export default function App() {
           component={HomeScreen}
           options={{
             title: 'Home',
+            headerShown: true,
           }}
         />
         <Tab.Screen 
@@ -57,6 +60,7 @@ export default function App() {
           component={LogScreen}
           options={{
             title: 'Workout Log',
+            headerShown: true,
           }}
         />
       </Tab.Navigator>
