@@ -3,9 +3,13 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
+import { Platform } from 'react-native';
 
 import HomeScreen from './screens/HomeScreen';
 import LogScreen from './screens/LogScreen';
+import ProgressScreen from './screens/ProgressScreen';
+import ExerciseLibraryScreen from './screens/ExerciseLibraryScreen';
+import SettingsScreen from './screens/SettingsScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -22,28 +26,31 @@ export default function App() {
               iconName = focused ? 'home' : 'home-outline';
             } else if (route.name === 'Log') {
               iconName = focused ? 'fitness' : 'fitness-outline';
+            } else if (route.name === 'Progress') {
+              iconName = focused ? 'trending-up' : 'trending-up-outline';
+            } else if (route.name === 'Library') {
+              iconName = focused ? 'library' : 'library-outline';
+            } else if (route.name === 'Settings') {
+              iconName = focused ? 'settings' : 'settings-outline';
             }
 
             return <Ionicons name={iconName} size={size} color={color} />;
           },
-          tabBarActiveTintColor: '#3498db',
+          tabBarActiveTintColor: '#667eea',
           tabBarInactiveTintColor: '#7f8c8d',
           tabBarStyle: {
             backgroundColor: '#fff',
-            borderTopWidth: 1,
-            borderTopColor: '#ecf0f1',
-            paddingBottom: 5,
+            borderTopWidth: 0,
+            paddingBottom: Platform.OS === 'ios' ? 20 : 5,
             paddingTop: 5,
-            height: 60,
+            height: Platform.OS === 'ios' ? 85 : 60,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: -2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 4,
+            elevation: 8,
           },
-          headerStyle: {
-            backgroundColor: '#3498db',
-          },
-          headerTintColor: '#fff',
-          headerTitleStyle: {
-            fontWeight: 'bold',
-          },
-          // Ensure proper screen behavior
+          headerShown: false,
           unmountOnBlur: false,
         })}
       >
@@ -52,15 +59,34 @@ export default function App() {
           component={HomeScreen}
           options={{
             title: 'Home',
-            headerShown: true,
           }}
         />
         <Tab.Screen 
           name="Log" 
           component={LogScreen}
           options={{
-            title: 'Workout Log',
-            headerShown: true,
+            title: 'Workout',
+          }}
+        />
+        <Tab.Screen 
+          name="Progress" 
+          component={ProgressScreen}
+          options={{
+            title: 'Progress',
+          }}
+        />
+        <Tab.Screen 
+          name="Library" 
+          component={ExerciseLibraryScreen}
+          options={{
+            title: 'Exercises',
+          }}
+        />
+        <Tab.Screen 
+          name="Settings" 
+          component={SettingsScreen}
+          options={{
+            title: 'Settings',
           }}
         />
       </Tab.Navigator>

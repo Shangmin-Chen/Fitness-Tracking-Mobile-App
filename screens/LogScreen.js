@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,10 @@ import {
   Modal,
   FlatList,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Haptics from 'expo-haptics';
 
 export default function LogScreen() {
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -28,6 +32,45 @@ export default function LogScreen() {
     reps: '10',
     weight: '',
   });
+
+  // Load data on component mount
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      const [workoutData, templateData] = await Promise.all([
+        AsyncStorage.getItem('workoutLogs'),
+        AsyncStorage.getItem('templates'),
+      ]);
+      
+      if (workoutData) {
+        setWorkoutLogs(JSON.parse(workoutData));
+      }
+      if (templateData) {
+        setTemplates(JSON.parse(templateData));
+      }
+    } catch (error) {
+      console.error('Error loading data:', error);
+    }
+  };
+
+  const saveWorkoutLogs = async (logs) => {
+    try {
+      await AsyncStorage.setItem('workoutLogs', JSON.stringify(logs));
+    } catch (error) {
+      console.error('Error saving workout logs:', error);
+    }
+  };
+
+  const saveTemplates = async (templates) => {
+    try {
+      await AsyncStorage.setItem('templates', JSON.stringify(templates));
+    } catch (error) {
+      console.error('Error saving templates:', error);
+    }
+  };
 
   // Default exercises to choose from
   const defaultExercises = [
@@ -126,7 +169,7 @@ export default function LogScreen() {
     setCurrentWorkout(prev => prev.filter(ex => ex.id !== exerciseId));
   };
 
-  const saveWorkout = () => {
+  const saveWorkout = async () => {
     if (currentWorkout.length === 0) {
       Alert.alert('Error', 'Please add at least one exercise');
       return;
@@ -164,13 +207,19 @@ export default function LogScreen() {
       date: selectedDate.toISOString(),
     };
     
-    setWorkoutLogs(prev => ({
-      ...prev,
+    const updatedLogs = {
+      ...workoutLogs,
       [dateKey]: newWorkout,
-    }));
+    };
+    
+    setWorkoutLogs(updatedLogs);
+    await saveWorkoutLogs(updatedLogs);
     
     setCurrentWorkout([]);
     setIsCreatingWorkout(false);
+    
+    // Haptic feedback
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     Alert.alert('Success', 'Workout saved successfully!');
   };
 
@@ -184,7 +233,7 @@ export default function LogScreen() {
     setShowCreateTemplate(true);
   };
 
-  const createTemplate = () => {
+  const createTemplate = async () => {
     if (!templateName.trim()) {
       Alert.alert('Error', 'Please enter a template name');
       return;
@@ -197,13 +246,19 @@ export default function LogScreen() {
       createdAt: new Date().toISOString(),
     };
     
-    setTemplates(prev => ({
-      ...prev,
+    const updatedTemplates = {
+      ...templates,
       [template.id]: template,
-    }));
+    };
+    
+    setTemplates(updatedTemplates);
+    await saveTemplates(updatedTemplates);
     
     setShowCreateTemplate(false);
     setTemplateName('');
+    
+    // Haptic feedback
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     Alert.alert('Success', 'Template saved successfully!');
   };
 
@@ -225,12 +280,14 @@ export default function LogScreen() {
         {
           text: 'Delete',
           style: 'destructive',
-          onPress: () => {
-            setTemplates(prev => {
-              const newTemplates = { ...prev };
-              delete newTemplates[templateId];
-              return newTemplates;
-            });
+          onPress: async () => {
+            const newTemplates = { ...templates };
+            delete newTemplates[templateId];
+            setTemplates(newTemplates);
+            await saveTemplates(newTemplates);
+            
+            // Haptic feedback
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
           },
         },
       ]
@@ -307,14 +364,23 @@ export default function LogScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView style={styles.scrollView}>
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        {/* Header */}
+        <LinearGradient
+          colors={['#667eea', '#764ba2']}
+          style={styles.header}
+        >
+          <Text style={styles.headerTitle}>Workout Log</Text>
+          <Text style={styles.headerSubtitle}>Track your training sessions</Text>
+        </LinearGradient>
+
         {/* Calendar Header */}
         <View style={styles.calendarHeader}>
           <TouchableOpacity 
             style={styles.monthNavButton} 
             onPress={() => changeMonth('prev')}
           >
-            <Text style={styles.monthNavButtonText}>‹</Text>
+            <Ionicons name="chevron-back" size={20} color="#fff" />
           </TouchableOpacity>
           <Text style={styles.monthYear}>
             {getMonthName(currentMonth)} {currentYear}
@@ -323,7 +389,7 @@ export default function LogScreen() {
             style={styles.monthNavButton} 
             onPress={() => changeMonth('next')}
           >
-            <Text style={styles.monthNavButtonText}>›</Text>
+            <Ionicons name="chevron-forward" size={20} color="#fff" />
           </TouchableOpacity>
         </View>
 
@@ -697,33 +763,51 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
+  header: {
+    padding: 30,
+    paddingTop: 20,
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
+  },
+  headerTitle: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  headerSubtitle: {
+    fontSize: 16,
+    color: 'rgba(255, 255, 255, 0.8)',
+    textAlign: 'center',
+  },
   calendarHeader: {
     padding: 20,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    backgroundColor: '#667eea',
+    marginHorizontal: 20,
+    marginTop: 20,
+    borderRadius: 15,
   },
   monthNavButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#3498db',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  monthNavButtonText: {
-    color: '#fff',
+  monthYear: {
     fontSize: 20,
     fontWeight: 'bold',
-  },
-  monthYear: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#2c3e50',
+    color: '#fff',
   },
   calendar: {
     backgroundColor: '#fff',
-    margin: 20,
+    marginHorizontal: 20,
+    marginBottom: 20,
     borderRadius: 15,
     padding: 15,
     shadowColor: '#000',
@@ -732,8 +816,8 @@ const styles = StyleSheet.create({
       height: 2,
     },
     shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
+    shadowRadius: 4,
+    elevation: 3,
   },
   dayHeaders: {
     flexDirection: 'row',
@@ -758,7 +842,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   todayCell: {
-    backgroundColor: '#3498db',
+    backgroundColor: '#667eea',
     borderRadius: 20,
   },
   workoutDayCell: {
@@ -818,7 +902,7 @@ const styles = StyleSheet.create({
     color: '#2c3e50',
   },
   addButton: {
-    backgroundColor: '#3498db',
+    backgroundColor: '#667eea',
     paddingHorizontal: 15,
     paddingVertical: 8,
     borderRadius: 20,
@@ -970,7 +1054,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   saveWorkoutButton: {
-    backgroundColor: '#3498db',
+    backgroundColor: '#667eea',
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 8,
@@ -1081,8 +1165,8 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   startFromScratchOption: {
-    backgroundColor: '#3498db',
-    borderColor: '#3498db',
+    backgroundColor: '#667eea',
+    borderColor: '#667eea',
   },
   startFromScratchText: {
     color: '#fff',
@@ -1136,7 +1220,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   exerciseChip: {
-    backgroundColor: '#3498db',
+    backgroundColor: '#667eea',
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 20,
@@ -1174,3 +1258,4 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
 });
+

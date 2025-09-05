@@ -13,7 +13,9 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.twoplates.gymapp",
+      "buildNumber": "1.0.0"
     },
     "android": {
       "adaptiveIcon": {
