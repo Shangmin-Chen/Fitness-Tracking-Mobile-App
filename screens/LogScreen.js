@@ -34,8 +34,6 @@ export default function LogScreen() {
     reps: '10',
     weight: '',
   });
-  const [autoSaveTimeout, setAutoSaveTimeout] = useState(null);
-  const [lastSaved, setLastSaved] = useState(null);
   const [draggedIndex, setDraggedIndex] = useState(null);
 
   // Load data on component mount
@@ -43,14 +41,6 @@ export default function LogScreen() {
     loadData();
   }, []);
 
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (autoSaveTimeout) {
-        clearTimeout(autoSaveTimeout);
-      }
-    };
-  }, [autoSaveTimeout]);
 
   const loadData = async () => {
     try {
@@ -158,12 +148,7 @@ export default function LogScreen() {
 
   const hasWorkout = (day) => {
     const dateKey = getDateKey(day);
-    return workoutLogs[dateKey] && !workoutLogs[dateKey].isDraft;
-  };
-
-  const isDraftWorkout = (day) => {
-    const dateKey = getDateKey(day);
-    return workoutLogs[dateKey]?.isDraft;
+    return workoutLogs[dateKey];
   };
 
   const handleDatePress = (day) => {
@@ -172,7 +157,6 @@ export default function LogScreen() {
       // Clear workout state when changing dates
       setIsCreatingWorkout(false);
       setCurrentWorkout([]);
-      setLastSaved(null);
     }
   };
 
@@ -207,32 +191,10 @@ export default function LogScreen() {
     setCurrentWorkout(prev => [...prev, exercise]);
     setNewExercise({ name: '', sets: '3', reps: '10', weight: '' });
     setShowAddExercise(false);
-    
-    // Trigger auto-save
-    if (autoSaveTimeout) {
-      clearTimeout(autoSaveTimeout);
-    }
-    
-    const timeout = setTimeout(() => {
-      autoSaveWorkout();
-    }, 2000);
-    
-    setAutoSaveTimeout(timeout);
   };
 
   const removeExercise = (exerciseId) => {
     setCurrentWorkout(prev => prev.filter(ex => ex.id !== exerciseId));
-    
-    // Trigger auto-save
-    if (autoSaveTimeout) {
-      clearTimeout(autoSaveTimeout);
-    }
-    
-    const timeout = setTimeout(() => {
-      autoSaveWorkout();
-    }, 2000);
-    
-    setAutoSaveTimeout(timeout);
   };
 
 
@@ -245,17 +207,6 @@ export default function LogScreen() {
       exercises.splice(toIndex, 0, movedExercise);
       return exercises;
     });
-    
-    // Trigger auto-save
-    if (autoSaveTimeout) {
-      clearTimeout(autoSaveTimeout);
-    }
-    
-    const timeout = setTimeout(() => {
-      autoSaveWorkout();
-    }, 2000);
-    
-    setAutoSaveTimeout(timeout);
   };
 
   const DraggableExerciseItem = ({ exercise, index }) => {
@@ -397,7 +348,6 @@ export default function LogScreen() {
       })),
       notes: '',
       date: selectedDate.toISOString(),
-      isDraft: false, // Mark as completed
       completedAt: new Date().toISOString(),
     };
     
@@ -412,11 +362,6 @@ export default function LogScreen() {
     setCurrentWorkout([]);
     setIsCreatingWorkout(false);
     
-    // Clear auto-save timeout
-    if (autoSaveTimeout) {
-      clearTimeout(autoSaveTimeout);
-      setAutoSaveTimeout(null);
-    }
     
     // Haptic feedback
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -498,7 +443,6 @@ export default function LogScreen() {
     setCurrentWorkout(template.exercises.map(ex => ({ ...ex, id: Date.now() + Math.random() })));
     setIsCreatingWorkout(true);
     setShowTemplates(false);
-    setLastSaved(null);
   };
 
   const deleteTemplate = (templateId) => {
@@ -538,7 +482,6 @@ export default function LogScreen() {
   const startNewWorkout = () => {
     setCurrentWorkout([]);
     setIsCreatingWorkout(true);
-    setLastSaved(null);
   };
 
   const addDefaultExercise = (exerciseName) => {
@@ -551,17 +494,6 @@ export default function LogScreen() {
     };
     
     setCurrentWorkout(prev => [...prev, exercise]);
-    
-    // Trigger auto-save
-    if (autoSaveTimeout) {
-      clearTimeout(autoSaveTimeout);
-    }
-    
-    const timeout = setTimeout(() => {
-      autoSaveWorkout();
-    }, 2000);
-    
-    setAutoSaveTimeout(timeout);
   };
 
   const updateExerciseField = (exerciseId, field, value) => {
@@ -572,52 +504,8 @@ export default function LogScreen() {
           : ex
       )
     );
-    
-    // Auto-save after 2 seconds of inactivity
-    if (autoSaveTimeout) {
-      clearTimeout(autoSaveTimeout);
-    }
-    
-    const timeout = setTimeout(() => {
-      autoSaveWorkout();
-    }, 2000);
-    
-    setAutoSaveTimeout(timeout);
-    
-    // Update last saved time to show user that changes are being tracked
-    setLastSaved(new Date());
   };
 
-  const autoSaveWorkout = async () => {
-    if (currentWorkout.length === 0 || !isCreatingWorkout) return;
-    
-    try {
-      const dateKey = getDateKey(selectedDate.getDate());
-      const workoutData = {
-        id: Date.now(),
-        exercises: currentWorkout.map(ex => ({
-          ...ex,
-          sets: parseInt(ex.sets, 10) || 0,
-          reps: parseInt(ex.reps, 10) || 0,
-          weight: ex.weight || 'Body Weight',
-        })),
-        notes: '',
-        date: selectedDate.toISOString(),
-        isDraft: true, // Mark as draft for auto-saved workouts
-      };
-      
-      const updatedLogs = {
-        ...workoutLogs,
-        [dateKey]: workoutData,
-      };
-      
-      setWorkoutLogs(updatedLogs);
-      await saveWorkoutLogs(updatedLogs);
-      setLastSaved(new Date());
-    } catch (error) {
-      console.error('Error auto-saving workout:', error);
-    }
-  };
 
   // Handle navigation month changes
   const changeMonth = (direction) => {
@@ -631,7 +519,6 @@ export default function LogScreen() {
     // Clear workout state when changing months
     setIsCreatingWorkout(false);
     setCurrentWorkout([]);
-    setLastSaved(null);
   };
 
   const getMonthName = (month) => {
@@ -757,7 +644,7 @@ export default function LogScreen() {
                 </TouchableOpacity>
               </View>
             )}
-            {selectedWorkout && !selectedWorkout.isDraft && (
+            {selectedWorkout && (
               <View style={styles.workoutActionButtons}>
                 <TouchableOpacity style={styles.addButton} onPress={startNewWorkout}>
                   <Ionicons name="add" size={16} color="#ffffff" style={{ marginRight: 4 }} />
@@ -767,7 +654,7 @@ export default function LogScreen() {
             )}
           </View>
 
-          {selectedWorkout && !selectedWorkout.isDraft ? (
+          {selectedWorkout ? (
             <View style={styles.workoutCard}>
               <View style={styles.workoutHeader}>
                 <Text style={styles.workoutDate}>Workout Completed</Text>
