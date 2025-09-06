@@ -9,7 +9,6 @@ import {
   TextInput,
   FlatList,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function ExerciseLibraryScreen() {
@@ -74,15 +73,15 @@ export default function ExerciseLibraryScreen() {
 
   const getDifficultyColor = (difficulty) => {
     switch (difficulty) {
-      case 'Beginner': return '#27ae60';
-      case 'Intermediate': return '#f39c12';
-      case 'Advanced': return '#e74c3c';
-      default: return '#7f8c8d';
+      case 'Beginner': return '#8e8e93';
+      case 'Intermediate': return '#1a1a1a';
+      case 'Advanced': return '#1a1a1a';
+      default: return '#c7c7cc';
     }
   };
 
   const ExerciseCard = ({ exercise }) => (
-    <TouchableOpacity style={styles.exerciseCard} activeOpacity={0.7}>
+    <TouchableOpacity style={styles.exerciseCard} activeOpacity={0.6}>
       <View style={styles.exerciseHeader}>
         <Text style={styles.exerciseName}>{exercise.name}</Text>
         <View style={[styles.difficultyBadge, { backgroundColor: getDifficultyColor(exercise.difficulty) }]}>
@@ -95,7 +94,7 @@ export default function ExerciseLibraryScreen() {
         <View style={styles.categoryTag}>
           <Text style={styles.categoryText}>{exercise.category}</Text>
         </View>
-        <Ionicons name="chevron-forward" size={16} color="#bdc3c7" />
+        <Ionicons name="chevron-forward" size={16} color="#8e8e93" />
       </View>
     </TouchableOpacity>
   );
@@ -104,13 +103,15 @@ export default function ExerciseLibraryScreen() {
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Header */}
-        <LinearGradient
-          colors={['#667eea', '#764ba2']}
-          style={styles.header}
-        >
+        <View style={styles.header}>
           <Text style={styles.headerTitle}>Exercise Library</Text>
           <Text style={styles.headerSubtitle}>Discover new exercises</Text>
-        </LinearGradient>
+          <View style={styles.headerPattern}>
+            <View style={styles.patternSquare} />
+            <View style={[styles.patternSquare, styles.patternSquareSmall]} />
+            <View style={[styles.patternSquare, styles.patternSquareLarge]} />
+          </View>
+        </View>
 
         {/* Search Bar */}
         <View style={styles.searchContainer}>
@@ -182,7 +183,7 @@ export default function ExerciseLibraryScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#fafafa',
   },
   scrollView: {
     flex: 1,
@@ -190,18 +191,46 @@ const styles = StyleSheet.create({
   header: {
     padding: 30,
     paddingTop: 20,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
+    backgroundColor: '#ffffff',
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    position: 'relative',
+    overflow: 'hidden',
   },
   headerTitle: {
     fontSize: 32,
-    fontWeight: 'bold',
-    color: '#fff',
+    fontWeight: '700',
+    color: '#1a1a1a',
     marginBottom: 8,
+    letterSpacing: -0.5,
   },
   headerSubtitle: {
     fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: '#8e8e93',
+    fontWeight: '400',
+  },
+  headerPattern: {
+    position: 'absolute',
+    top: 20,
+    right: 20,
+    zIndex: 1,
+  },
+  patternSquare: {
+    width: 12,
+    height: 12,
+    backgroundColor: '#f0f0f0',
+    marginBottom: 8,
+    borderRadius: 2,
+  },
+  patternSquareSmall: {
+    width: 8,
+    height: 8,
+    marginLeft: 16,
+  },
+  patternSquareLarge: {
+    width: 10,
+    height: 10,
+    marginLeft: 8,
   },
   searchContainer: {
     paddingHorizontal: 20,
@@ -210,21 +239,24 @@ const styles = StyleSheet.create({
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
-    borderRadius: 15,
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
     paddingHorizontal: 15,
     paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: '#f2f2f7',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 2,
+    elevation: 1,
   },
   searchInput: {
     flex: 1,
     marginLeft: 10,
     fontSize: 16,
-    color: '#2c3e50',
+    color: '#1a1a1a',
+    fontWeight: '400',
   },
   categoryContainer: {
     paddingVertical: 20,
@@ -233,24 +265,28 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 10,
     marginHorizontal: 5,
-    backgroundColor: '#fff',
+    backgroundColor: '#ffffff',
     borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#f2f2f7',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.03,
     shadowRadius: 2,
-    elevation: 2,
+    elevation: 1,
   },
   categoryButtonActive: {
-    backgroundColor: '#667eea',
+    backgroundColor: '#1a1a1a',
+    borderColor: '#1a1a1a',
   },
   categoryButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#7f8c8d',
+    color: '#8e8e93',
+    letterSpacing: -0.2,
   },
   categoryButtonTextActive: {
-    color: '#fff',
+    color: '#ffffff',
   },
   countContainer: {
     paddingHorizontal: 20,
@@ -258,7 +294,7 @@ const styles = StyleSheet.create({
   },
   countText: {
     fontSize: 14,
-    color: '#7f8c8d',
+    color: '#8e8e93',
     fontWeight: '500',
   },
   exercisesContainer: {
@@ -266,15 +302,17 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   exerciseCard: {
-    backgroundColor: '#fff',
+    backgroundColor: '#ffffff',
     padding: 20,
-    borderRadius: 15,
+    borderRadius: 16,
     marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#f2f2f7',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 2,
+    elevation: 1,
   },
   exerciseHeader: {
     flexDirection: 'row',
@@ -284,9 +322,10 @@ const styles = StyleSheet.create({
   },
   exerciseName: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#2c3e50',
+    fontWeight: '700',
+    color: '#1a1a1a',
     flex: 1,
+    letterSpacing: -0.3,
   },
   difficultyBadge: {
     paddingHorizontal: 8,
@@ -296,19 +335,21 @@ const styles = StyleSheet.create({
   difficultyText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#fff',
+    color: '#ffffff',
   },
   exerciseMuscle: {
     fontSize: 14,
-    color: '#3498db',
+    color: '#1a1a1a',
     fontWeight: '600',
     marginBottom: 8,
+    letterSpacing: -0.2,
   },
   exerciseDescription: {
     fontSize: 14,
-    color: '#7f8c8d',
+    color: '#8e8e93',
     lineHeight: 20,
     marginBottom: 12,
+    fontWeight: '400',
   },
   exerciseFooter: {
     flexDirection: 'row',
@@ -316,38 +357,42 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   categoryTag: {
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#f8f8f8',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
   },
   categoryText: {
     fontSize: 12,
-    color: '#7f8c8d',
+    color: '#8e8e93',
     fontWeight: '500',
   },
   emptyState: {
     alignItems: 'center',
     padding: 40,
-    backgroundColor: '#fff',
+    backgroundColor: '#ffffff',
     margin: 20,
-    borderRadius: 15,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#f2f2f7',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 2,
+    elevation: 1,
   },
   emptyStateText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#7f8c8d',
+    color: '#8e8e93',
     marginTop: 16,
     marginBottom: 8,
+    letterSpacing: -0.2,
   },
   emptyStateSubtext: {
     fontSize: 14,
-    color: '#bdc3c7',
+    color: '#c7c7cc',
     textAlign: 'center',
+    fontWeight: '400',
   },
 });

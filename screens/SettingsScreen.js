@@ -9,7 +9,6 @@ import {
   Switch,
   Alert,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -56,7 +55,7 @@ export default function SettingsScreen() {
     <TouchableOpacity style={styles.settingItem} onPress={onPress} disabled={!onPress}>
       <View style={styles.settingLeft}>
         <View style={styles.settingIcon}>
-          <Ionicons name={icon} size={24} color="#667eea" />
+          <Ionicons name={icon} size={20} color="#1a1a1a" />
         </View>
         <View style={styles.settingContent}>
           <Text style={styles.settingTitle}>{title}</Text>
@@ -66,7 +65,7 @@ export default function SettingsScreen() {
       <View style={styles.settingRight}>
         {rightComponent}
         {showArrow && onPress && (
-          <Ionicons name="chevron-forward" size={16} color="#bdc3c7" />
+          <Ionicons name="chevron-forward" size={16} color="#8e8e93" />
         )}
       </View>
     </TouchableOpacity>
@@ -85,13 +84,15 @@ export default function SettingsScreen() {
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Header */}
-        <LinearGradient
-          colors={['#667eea', '#764ba2']}
-          style={styles.header}
-        >
+        <View style={styles.header}>
           <Text style={styles.headerTitle}>Settings</Text>
           <Text style={styles.headerSubtitle}>Customize your experience</Text>
-        </LinearGradient>
+          <View style={styles.headerPattern}>
+            <View style={styles.patternTriangle} />
+            <View style={[styles.patternTriangle, styles.patternTriangleSmall]} />
+            <View style={[styles.patternTriangle, styles.patternTriangleLarge]} />
+          </View>
+        </View>
 
         {/* App Settings */}
         <SettingSection title="App Settings">
@@ -103,8 +104,8 @@ export default function SettingsScreen() {
               <Switch
                 value={notifications}
                 onValueChange={setNotifications}
-                trackColor={{ false: '#bdc3c7', true: '#667eea' }}
-                thumbColor={notifications ? '#fff' : '#f4f3f4'}
+                trackColor={{ false: '#c7c7cc', true: '#1a1a1a' }}
+                thumbColor={notifications ? '#ffffff' : '#f8f8f8'}
               />
             }
             showArrow={false}
@@ -117,8 +118,8 @@ export default function SettingsScreen() {
               <Switch
                 value={hapticFeedback}
                 onValueChange={setHapticFeedback}
-                trackColor={{ false: '#bdc3c7', true: '#667eea' }}
-                thumbColor={hapticFeedback ? '#fff' : '#f4f3f4'}
+                trackColor={{ false: '#c7c7cc', true: '#1a1a1a' }}
+                thumbColor={hapticFeedback ? '#ffffff' : '#f8f8f8'}
               />
             }
             showArrow={false}
@@ -131,8 +132,8 @@ export default function SettingsScreen() {
               <Switch
                 value={darkMode}
                 onValueChange={setDarkMode}
-                trackColor={{ false: '#bdc3c7', true: '#667eea' }}
-                thumbColor={darkMode ? '#fff' : '#f4f3f4'}
+                trackColor={{ false: '#c7c7cc', true: '#1a1a1a' }}
+                thumbColor={darkMode ? '#ffffff' : '#f8f8f8'}
               />
             }
             showArrow={false}
@@ -243,7 +244,7 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#fafafa',
   },
   scrollView: {
     flex: 1,
@@ -251,18 +252,52 @@ const styles = StyleSheet.create({
   header: {
     padding: 30,
     paddingTop: 20,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
+    backgroundColor: '#ffffff',
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    position: 'relative',
+    overflow: 'hidden',
   },
   headerTitle: {
     fontSize: 32,
-    fontWeight: 'bold',
-    color: '#fff',
+    fontWeight: '700',
+    color: '#1a1a1a',
     marginBottom: 8,
+    letterSpacing: -0.5,
   },
   headerSubtitle: {
     fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: '#8e8e93',
+    fontWeight: '400',
+  },
+  headerPattern: {
+    position: 'absolute',
+    top: 20,
+    right: 20,
+    zIndex: 1,
+  },
+  patternTriangle: {
+    width: 0,
+    height: 0,
+    borderLeftWidth: 6,
+    borderRightWidth: 6,
+    borderBottomWidth: 10,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    borderBottomColor: '#f0f0f0',
+    marginBottom: 8,
+  },
+  patternTriangleSmall: {
+    borderLeftWidth: 4,
+    borderRightWidth: 4,
+    borderBottomWidth: 6,
+    marginLeft: 12,
+  },
+  patternTriangleLarge: {
+    borderLeftWidth: 5,
+    borderRightWidth: 5,
+    borderBottomWidth: 8,
+    marginLeft: 6,
   },
   section: {
     marginTop: 30,
@@ -270,25 +305,28 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#2c3e50',
+    fontWeight: '700',
+    color: '#1a1a1a',
     marginBottom: 15,
+    letterSpacing: -0.3,
   },
   sectionContent: {
-    backgroundColor: '#fff',
-    borderRadius: 15,
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#f2f2f7',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 2,
+    elevation: 1,
   },
   settingItem: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#f8f9fa',
+    borderBottomColor: '#f2f2f7',
   },
   settingLeft: {
     flexDirection: 'row',
@@ -296,10 +334,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   settingIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#f8f9fa',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#f8f8f8',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 15,
@@ -310,12 +348,14 @@ const styles = StyleSheet.create({
   settingTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#2c3e50',
+    color: '#1a1a1a',
     marginBottom: 2,
+    letterSpacing: -0.2,
   },
   settingSubtitle: {
     fontSize: 14,
-    color: '#7f8c8d',
+    color: '#8e8e93',
+    fontWeight: '400',
   },
   settingRight: {
     flexDirection: 'row',
@@ -328,19 +368,22 @@ const styles = StyleSheet.create({
   },
   appName: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#2c3e50',
+    fontWeight: '700',
+    color: '#1a1a1a',
     marginBottom: 8,
+    letterSpacing: -0.3,
   },
   appDescription: {
     fontSize: 14,
-    color: '#7f8c8d',
+    color: '#8e8e93',
     textAlign: 'center',
     lineHeight: 20,
     marginBottom: 12,
+    fontWeight: '400',
   },
   appVersion: {
     fontSize: 12,
-    color: '#bdc3c7',
+    color: '#c7c7cc',
+    fontWeight: '500',
   },
 });

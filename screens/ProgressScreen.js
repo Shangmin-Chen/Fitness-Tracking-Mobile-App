@@ -8,7 +8,6 @@ import {
   TouchableOpacity,
   Dimensions,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -75,10 +74,12 @@ export default function ProgressScreen() {
     setRecentWorkouts(workouts.slice(-5).reverse());
   };
 
-  const StatCard = ({ title, value, subtitle, icon, color }) => (
-    <View style={[styles.statCard, { borderLeftColor: color }]}>
+  const StatCard = ({ title, value, subtitle, icon }) => (
+    <View style={styles.statCard}>
       <View style={styles.statHeader}>
-        <Ionicons name={icon} size={24} color={color} />
+        <View style={styles.statIconContainer}>
+          <Ionicons name={icon} size={20} color="#1a1a1a" />
+        </View>
         <Text style={styles.statValue}>{value}</Text>
       </View>
       <Text style={styles.statTitle}>{title}</Text>
@@ -115,13 +116,15 @@ export default function ProgressScreen() {
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Header */}
-        <LinearGradient
-          colors={['#667eea', '#764ba2']}
-          style={styles.header}
-        >
+        <View style={styles.header}>
           <Text style={styles.headerTitle}>Progress</Text>
           <Text style={styles.headerSubtitle}>Track your fitness journey</Text>
-        </LinearGradient>
+          <View style={styles.headerPattern}>
+            <View style={styles.patternDot} />
+            <View style={[styles.patternDot, styles.patternDotSmall]} />
+            <View style={[styles.patternDot, styles.patternDotLarge]} />
+          </View>
+        </View>
 
         {/* Period Selector */}
         <View style={styles.periodSelector}>
@@ -152,25 +155,21 @@ export default function ProgressScreen() {
             title="Total Workouts"
             value={workoutStats.totalWorkouts}
             icon="fitness"
-            color="#3498db"
           />
           <StatCard
             title="This Week"
             value={workoutStats.thisWeek}
             icon="calendar"
-            color="#e74c3c"
           />
           <StatCard
             title="This Month"
             value={workoutStats.thisMonth}
             icon="calendar-outline"
-            color="#f39c12"
           />
           <StatCard
             title="Total Exercises"
             value={workoutStats.totalExercises}
             icon="barbell"
-            color="#27ae60"
           />
         </View>
 
@@ -197,12 +196,16 @@ export default function ProgressScreen() {
           <Text style={styles.sectionTitle}>Achievements</Text>
           <View style={styles.achievementsGrid}>
             <View style={styles.achievementCard}>
-              <Ionicons name="trophy" size={32} color="#f39c12" />
+              <View style={styles.achievementIconContainer}>
+                <Ionicons name="trophy" size={24} color="#1a1a1a" />
+              </View>
               <Text style={styles.achievementTitle}>First Workout</Text>
               <Text style={styles.achievementDesc}>Complete your first workout</Text>
             </View>
             <View style={styles.achievementCard}>
-              <Ionicons name="flame" size={32} color="#e74c3c" />
+              <View style={styles.achievementIconContainer}>
+                <Ionicons name="flame" size={24} color="#1a1a1a" />
+              </View>
               <Text style={styles.achievementTitle}>Streak Master</Text>
               <Text style={styles.achievementDesc}>Workout 7 days in a row</Text>
             </View>
@@ -216,7 +219,7 @@ export default function ProgressScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#fafafa',
   },
   scrollView: {
     flex: 1,
@@ -224,30 +227,62 @@ const styles = StyleSheet.create({
   header: {
     padding: 30,
     paddingTop: 20,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
+    backgroundColor: '#ffffff',
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    position: 'relative',
+    overflow: 'hidden',
   },
   headerTitle: {
     fontSize: 32,
-    fontWeight: 'bold',
-    color: '#fff',
+    fontWeight: '700',
+    color: '#1a1a1a',
     marginBottom: 8,
+    letterSpacing: -0.5,
   },
   headerSubtitle: {
     fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: '#8e8e93',
+    fontWeight: '400',
+  },
+  headerPattern: {
+    position: 'absolute',
+    top: 20,
+    right: 20,
+    zIndex: 1,
+  },
+  patternDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#f0f0f0',
+    marginBottom: 6,
+  },
+  patternDotSmall: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    marginLeft: 12,
+  },
+  patternDotLarge: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginLeft: 6,
   },
   periodSelector: {
     flexDirection: 'row',
     margin: 20,
-    backgroundColor: '#fff',
-    borderRadius: 15,
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
     padding: 4,
+    borderWidth: 1,
+    borderColor: '#f2f2f7',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 2,
+    elevation: 1,
   },
   periodButton: {
     flex: 1,
@@ -256,15 +291,16 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   periodButtonActive: {
-    backgroundColor: '#667eea',
+    backgroundColor: '#1a1a1a',
   },
   periodButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#7f8c8d',
+    color: '#8e8e93',
+    letterSpacing: -0.2,
   },
   periodButtonTextActive: {
-    color: '#fff',
+    color: '#ffffff',
   },
   statsGrid: {
     flexDirection: 'row',
@@ -274,38 +310,50 @@ const styles = StyleSheet.create({
   },
   statCard: {
     width: (width - 60) / 2,
-    backgroundColor: '#fff',
+    backgroundColor: '#ffffff',
     padding: 20,
-    borderRadius: 15,
+    borderRadius: 16,
     marginBottom: 15,
     marginHorizontal: 5,
-    borderLeftWidth: 4,
+    borderWidth: 1,
+    borderColor: '#f2f2f7',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 2,
+    elevation: 1,
   },
   statHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 12,
+  },
+  statIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#f8f8f8',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   statValue: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#2c3e50',
+    fontWeight: '700',
+    color: '#1a1a1a',
+    letterSpacing: -0.5,
   },
   statTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#7f8c8d',
+    color: '#8e8e93',
+    letterSpacing: -0.2,
   },
   statSubtitle: {
     fontSize: 12,
-    color: '#bdc3c7',
+    color: '#c7c7cc',
     marginTop: 4,
+    fontWeight: '500',
   },
   section: {
     paddingHorizontal: 20,
@@ -313,20 +361,23 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#2c3e50',
+    fontWeight: '700',
+    color: '#1a1a1a',
     marginBottom: 15,
+    letterSpacing: -0.3,
   },
   workoutCard: {
-    backgroundColor: '#fff',
+    backgroundColor: '#ffffff',
     padding: 20,
-    borderRadius: 15,
+    borderRadius: 16,
     marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#f2f2f7',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 2,
+    elevation: 1,
   },
   workoutHeader: {
     flexDirection: 'row',
@@ -337,47 +388,55 @@ const styles = StyleSheet.create({
   workoutDate: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#2c3e50',
+    color: '#1a1a1a',
+    letterSpacing: -0.2,
   },
   exerciseCount: {
     fontSize: 14,
-    color: '#7f8c8d',
+    color: '#8e8e93',
+    fontWeight: '500',
   },
   exerciseList: {
     marginTop: 8,
   },
   exerciseName: {
     fontSize: 14,
-    color: '#7f8c8d',
+    color: '#8e8e93',
     marginBottom: 4,
+    fontWeight: '400',
   },
   moreExercises: {
     fontSize: 14,
-    color: '#3498db',
+    color: '#1a1a1a',
     fontStyle: 'italic',
+    fontWeight: '500',
   },
   emptyState: {
     alignItems: 'center',
     padding: 40,
-    backgroundColor: '#fff',
-    borderRadius: 15,
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#f2f2f7',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 2,
+    elevation: 1,
   },
   emptyStateText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#7f8c8d',
+    color: '#8e8e93',
     marginTop: 16,
     marginBottom: 8,
+    letterSpacing: -0.2,
   },
   emptyStateSubtext: {
     fontSize: 14,
-    color: '#bdc3c7',
+    color: '#c7c7cc',
     textAlign: 'center',
+    fontWeight: '400',
   },
   achievementsGrid: {
     flexDirection: 'row',
@@ -385,28 +444,40 @@ const styles = StyleSheet.create({
   },
   achievementCard: {
     width: (width - 60) / 2,
-    backgroundColor: '#fff',
+    backgroundColor: '#ffffff',
     padding: 20,
-    borderRadius: 15,
+    borderRadius: 16,
     marginBottom: 15,
     marginHorizontal: 5,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#f2f2f7',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  achievementIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#f8f8f8',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
   },
   achievementTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#2c3e50',
-    marginTop: 12,
+    color: '#1a1a1a',
     marginBottom: 4,
+    letterSpacing: -0.2,
   },
   achievementDesc: {
     fontSize: 12,
-    color: '#7f8c8d',
+    color: '#8e8e93',
     textAlign: 'center',
+    fontWeight: '400',
   },
 });

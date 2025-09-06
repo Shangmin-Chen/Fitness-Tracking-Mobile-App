@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Dimensions } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -82,36 +81,34 @@ export default function HomeScreen({ navigation }) {
       title: 'Start Workout',
       subtitle: 'Begin a new workout session',
       icon: 'fitness',
-      color: '#667eea',
       onPress: () => navigation.navigate('Log'),
     },
     {
       title: 'View Progress',
       subtitle: 'Track your fitness journey',
       icon: 'trending-up',
-      color: '#f39c12',
       onPress: () => navigation.navigate('Progress'),
     },
     {
       title: 'Exercise Library',
       subtitle: 'Browse exercise database',
       icon: 'library',
-      color: '#e74c3c',
       onPress: () => navigation.navigate('Library'),
     },
     {
       title: 'Templates',
       subtitle: 'Use saved workout routines',
       icon: 'copy',
-      color: '#27ae60',
       onPress: () => navigation.navigate('Log'),
     },
   ];
 
-  const StatCard = ({ title, value, subtitle, icon, color }) => (
-    <View style={[styles.statCard, { borderLeftColor: color }]}>
+  const StatCard = ({ title, value, subtitle, icon }) => (
+    <View style={styles.statCard}>
       <View style={styles.statHeader}>
-        <Ionicons name={icon} size={20} color={color} />
+        <View style={styles.statIconContainer}>
+          <Ionicons name={icon} size={18} color="#1a1a1a" />
+        </View>
         <Text style={styles.statValue}>{value}</Text>
       </View>
       <Text style={styles.statTitle}>{title}</Text>
@@ -121,18 +118,18 @@ export default function HomeScreen({ navigation }) {
 
   const QuickActionCard = ({ action }) => (
     <TouchableOpacity
-      style={[styles.actionCard, { borderLeftColor: action.color }]}
+      style={styles.actionCard}
       onPress={action.onPress}
-      activeOpacity={0.7}
+      activeOpacity={0.6}
     >
-      <View style={[styles.actionIcon, { backgroundColor: action.color }]}>
-        <Ionicons name={action.icon} size={24} color="#fff" />
+      <View style={styles.actionIcon}>
+        <Ionicons name={action.icon} size={20} color="#1a1a1a" />
       </View>
       <View style={styles.actionContent}>
         <Text style={styles.actionTitle}>{action.title}</Text>
         <Text style={styles.actionSubtitle}>{action.subtitle}</Text>
       </View>
-      <Ionicons name="chevron-forward" size={16} color="#bdc3c7" />
+      <Ionicons name="chevron-forward" size={16} color="#8e8e93" />
     </TouchableOpacity>
   );
 
@@ -140,16 +137,18 @@ export default function HomeScreen({ navigation }) {
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Header */}
-        <LinearGradient
-          colors={['#667eea', '#764ba2']}
-          style={styles.header}
-        >
+        <View style={styles.header}>
           <View style={styles.headerContent}>
             <Text style={styles.greeting}>Good {getGreeting()}</Text>
             <Text style={styles.title}>Ready to train?</Text>
             <Text style={styles.subtitle}>Let's make today count</Text>
           </View>
-        </LinearGradient>
+          <View style={styles.headerPattern}>
+            <View style={styles.patternCircle} />
+            <View style={[styles.patternCircle, styles.patternCircleSmall]} />
+            <View style={[styles.patternCircle, styles.patternCircleLarge]} />
+          </View>
+        </View>
 
         {/* Stats Overview */}
         <View style={styles.statsContainer}>
@@ -159,25 +158,21 @@ export default function HomeScreen({ navigation }) {
               title="Workouts Today"
               value={workoutStats.todayWorkouts}
               icon="fitness"
-              color="#667eea"
             />
             <StatCard
               title="This Week"
               value={workoutStats.thisWeek}
               icon="calendar"
-              color="#f39c12"
             />
             <StatCard
               title="Total Workouts"
               value={workoutStats.totalWorkouts}
               icon="trophy"
-              color="#e74c3c"
             />
             <StatCard
               title="Streak"
               value={`${workoutStats.streak} days`}
               icon="flame"
-              color="#27ae60"
             />
           </View>
         </View>
@@ -223,6 +218,9 @@ export default function HomeScreen({ navigation }) {
 
         {/* Motivational Quote */}
         <View style={styles.quoteCard}>
+          <View style={styles.quoteIcon}>
+            <Ionicons name="quote" size={24} color="#8e8e93" />
+          </View>
           <Text style={styles.quoteText}>
             "The only bad workout is the one that didn't happen."
           </Text>
@@ -243,7 +241,7 @@ export default function HomeScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#fafafa',
   },
   scrollView: {
     flex: 1,
@@ -251,28 +249,66 @@ const styles = StyleSheet.create({
   header: {
     padding: 30,
     paddingTop: 20,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
+    backgroundColor: '#ffffff',
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    position: 'relative',
+    overflow: 'hidden',
   },
   headerContent: {
     alignItems: 'center',
+    zIndex: 2,
+  },
+  headerPattern: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    width: 120,
+    height: 120,
+    zIndex: 1,
+  },
+  patternCircle: {
+    position: 'absolute',
+    borderRadius: 50,
+    backgroundColor: '#f5f5f5',
+    width: 60,
+    height: 60,
+    top: 20,
+    right: 20,
+  },
+  patternCircleSmall: {
+    width: 30,
+    height: 30,
+    top: 40,
+    right: 60,
+    backgroundColor: '#e8e8e8',
+  },
+  patternCircleLarge: {
+    width: 40,
+    height: 40,
+    top: 60,
+    right: 10,
+    backgroundColor: '#f0f0f0',
   },
   greeting: {
     fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: '#8e8e93',
     marginBottom: 8,
+    fontWeight: '500',
   },
   title: {
     fontSize: 32,
-    fontWeight: 'bold',
-    color: '#fff',
+    fontWeight: '700',
+    color: '#1a1a1a',
     marginBottom: 8,
     textAlign: 'center',
+    letterSpacing: -0.5,
   },
   subtitle: {
     fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: '#8e8e93',
     textAlign: 'center',
+    fontWeight: '400',
   },
   statsContainer: {
     padding: 20,
@@ -283,9 +319,10 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#2c3e50',
+    fontWeight: '700',
+    color: '#1a1a1a',
     marginBottom: 15,
+    letterSpacing: -0.3,
   },
   statsGrid: {
     flexDirection: 'row',
@@ -294,47 +331,61 @@ const styles = StyleSheet.create({
   },
   statCard: {
     width: (width - 60) / 2,
-    backgroundColor: '#fff',
+    backgroundColor: '#ffffff',
     padding: 20,
-    borderRadius: 15,
+    borderRadius: 16,
     marginBottom: 15,
-    borderLeftWidth: 4,
+    borderWidth: 1,
+    borderColor: '#f2f2f7',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 2,
+    elevation: 1,
   },
   statHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 12,
+  },
+  statIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#f8f8f8',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   statValue: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#2c3e50',
+    fontWeight: '700',
+    color: '#1a1a1a',
+    letterSpacing: -0.5,
   },
   statTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#7f8c8d',
+    color: '#8e8e93',
+    letterSpacing: -0.2,
   },
   statSubtitle: {
     fontSize: 12,
-    color: '#bdc3c7',
+    color: '#c7c7cc',
     marginTop: 4,
+    fontWeight: '500',
   },
   recentWorkoutCard: {
-    backgroundColor: '#fff',
+    backgroundColor: '#ffffff',
     padding: 20,
-    borderRadius: 15,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#f2f2f7',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 2,
+    elevation: 1,
   },
   recentWorkoutHeader: {
     flexDirection: 'row',
@@ -345,24 +396,28 @@ const styles = StyleSheet.create({
   recentWorkoutDate: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#2c3e50',
+    color: '#1a1a1a',
+    letterSpacing: -0.2,
   },
   exerciseCount: {
     fontSize: 14,
-    color: '#7f8c8d',
+    color: '#8e8e93',
+    fontWeight: '500',
   },
   exerciseList: {
     marginTop: 8,
   },
   exerciseName: {
     fontSize: 14,
-    color: '#7f8c8d',
+    color: '#8e8e93',
     marginBottom: 4,
+    fontWeight: '400',
   },
   moreExercises: {
     fontSize: 14,
-    color: '#3498db',
+    color: '#1a1a1a',
     fontStyle: 'italic',
+    fontWeight: '500',
   },
   actionsGrid: {
     flexDirection: 'row',
@@ -371,23 +426,25 @@ const styles = StyleSheet.create({
   },
   actionCard: {
     width: (width - 60) / 2,
-    backgroundColor: '#fff',
+    backgroundColor: '#ffffff',
     padding: 20,
-    borderRadius: 15,
+    borderRadius: 16,
     marginBottom: 15,
     flexDirection: 'row',
     alignItems: 'center',
-    borderLeftWidth: 4,
+    borderWidth: 1,
+    borderColor: '#f2f2f7',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 2,
+    elevation: 1,
   },
   actionIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#f8f8f8',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -398,36 +455,45 @@ const styles = StyleSheet.create({
   actionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#2c3e50',
+    color: '#1a1a1a',
     marginBottom: 4,
+    letterSpacing: -0.2,
   },
   actionSubtitle: {
     fontSize: 12,
-    color: '#7f8c8d',
+    color: '#8e8e93',
+    fontWeight: '400',
   },
   quoteCard: {
-    backgroundColor: '#fff',
+    backgroundColor: '#ffffff',
     margin: 20,
     padding: 25,
-    borderRadius: 15,
+    borderRadius: 16,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#f2f2f7',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  quoteIcon: {
+    marginBottom: 12,
   },
   quoteText: {
     fontSize: 16,
     fontStyle: 'italic',
-    color: '#2c3e50',
+    color: '#1a1a1a',
     textAlign: 'center',
     lineHeight: 24,
     marginBottom: 12,
+    fontWeight: '400',
+    letterSpacing: -0.2,
   },
   quoteAuthor: {
     fontSize: 14,
-    color: '#7f8c8d',
+    color: '#8e8e93',
     fontWeight: '500',
   },
 });

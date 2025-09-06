@@ -16,7 +16,7 @@ const Tab = createBottomTabNavigator();
 export default function App() {
   return (
     <NavigationContainer>
-      <StatusBar style="auto" />
+      <StatusBar style="dark" />
       <Tab.Navigator
         screenOptions={({ route }) => ({
           tabBarIcon: ({ focused, color, size }) => {
@@ -36,19 +36,25 @@ export default function App() {
 
             return <Ionicons name={iconName} size={size} color={color} />;
           },
-          tabBarActiveTintColor: '#667eea',
-          tabBarInactiveTintColor: '#7f8c8d',
+          tabBarActiveTintColor: '#1a1a1a',
+          tabBarInactiveTintColor: '#8e8e93',
           tabBarStyle: {
-            backgroundColor: '#fff',
-            borderTopWidth: 0,
-            paddingBottom: Platform.OS === 'ios' ? 20 : 5,
-            paddingTop: 5,
-            height: Platform.OS === 'ios' ? 85 : 60,
+            backgroundColor: '#ffffff',
+            borderTopWidth: 1,
+            borderTopColor: '#f2f2f7',
+            paddingBottom: Platform.OS === 'ios' ? 20 : 8,
+            paddingTop: 8,
+            height: Platform.OS === 'ios' ? 85 : 65,
             shadowColor: '#000',
-            shadowOffset: { width: 0, height: -2 },
-            shadowOpacity: 0.1,
-            shadowRadius: 4,
-            elevation: 8,
+            shadowOffset: { width: 0, height: -1 },
+            shadowOpacity: 0.05,
+            shadowRadius: 2,
+            elevation: 2,
+          },
+          tabBarLabelStyle: {
+            fontSize: 11,
+            fontWeight: '500',
+            marginTop: 2,
           },
           headerShown: false,
           unmountOnBlur: false,

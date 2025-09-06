@@ -11,7 +11,6 @@ import {
   Modal,
   FlatList,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
@@ -366,13 +365,15 @@ export default function LogScreen() {
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Header */}
-        <LinearGradient
-          colors={['#667eea', '#764ba2']}
-          style={styles.header}
-        >
+        <View style={styles.header}>
           <Text style={styles.headerTitle}>Workout Log</Text>
           <Text style={styles.headerSubtitle}>Track your training sessions</Text>
-        </LinearGradient>
+          <View style={styles.headerPattern}>
+            <View style={styles.patternLine} />
+            <View style={[styles.patternLine, styles.patternLineShort]} />
+            <View style={[styles.patternLine, styles.patternLineMedium]} />
+          </View>
+        </View>
 
         {/* Calendar Header */}
         <View style={styles.calendarHeader}>
@@ -380,7 +381,7 @@ export default function LogScreen() {
             style={styles.monthNavButton} 
             onPress={() => changeMonth('prev')}
           >
-            <Ionicons name="chevron-back" size={20} color="#fff" />
+            <Ionicons name="chevron-back" size={20} color="#1a1a1a" />
           </TouchableOpacity>
           <Text style={styles.monthYear}>
             {getMonthName(currentMonth)} {currentYear}
@@ -389,7 +390,7 @@ export default function LogScreen() {
             style={styles.monthNavButton} 
             onPress={() => changeMonth('next')}
           >
-            <Ionicons name="chevron-forward" size={20} color="#fff" />
+            <Ionicons name="chevron-forward" size={20} color="#1a1a1a" />
           </TouchableOpacity>
         </View>
 
@@ -453,7 +454,8 @@ export default function LogScreen() {
             <Text style={styles.workoutTitle}>Workout Log</Text>
             {!selectedWorkout && !isCreatingWorkout && (
               <TouchableOpacity style={styles.addButton} onPress={startNewWorkout}>
-                <Text style={styles.addButtonText}>+ New Workout</Text>
+                <Ionicons name="add" size={16} color="#ffffff" style={{ marginRight: 4 }} />
+                <Text style={styles.addButtonText}>New Workout</Text>
               </TouchableOpacity>
             )}
             {isCreatingWorkout && (
@@ -758,7 +760,7 @@ export default function LogScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#fafafa',
   },
   scrollView: {
     flex: 1,
@@ -766,69 +768,101 @@ const styles = StyleSheet.create({
   header: {
     padding: 30,
     paddingTop: 20,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
+    backgroundColor: '#ffffff',
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    position: 'relative',
+    overflow: 'hidden',
   },
   headerTitle: {
     fontSize: 32,
-    fontWeight: 'bold',
-    color: '#fff',
+    fontWeight: '700',
+    color: '#1a1a1a',
     marginBottom: 8,
     textAlign: 'center',
+    letterSpacing: -0.5,
   },
   headerSubtitle: {
     fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: '#8e8e93',
     textAlign: 'center',
+    fontWeight: '400',
+  },
+  headerPattern: {
+    position: 'absolute',
+    top: 20,
+    right: 20,
+    zIndex: 1,
+  },
+  patternLine: {
+    width: 40,
+    height: 2,
+    backgroundColor: '#f0f0f0',
+    marginBottom: 8,
+    borderRadius: 1,
+  },
+  patternLineShort: {
+    width: 25,
+  },
+  patternLineMedium: {
+    width: 30,
   },
   calendarHeader: {
     padding: 20,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#667eea',
+    backgroundColor: '#ffffff',
     marginHorizontal: 20,
     marginTop: 20,
-    borderRadius: 15,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#f2f2f7',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 2,
+    elevation: 1,
   },
   monthNavButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: '#f8f8f8',
     justifyContent: 'center',
     alignItems: 'center',
   },
   monthYear: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#fff',
+    fontWeight: '700',
+    color: '#1a1a1a',
+    letterSpacing: -0.3,
   },
   calendar: {
-    backgroundColor: '#fff',
+    backgroundColor: '#ffffff',
     marginHorizontal: 20,
     marginBottom: 20,
-    borderRadius: 15,
-    padding: 15,
+    borderRadius: 16,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: '#f2f2f7',
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 2,
+    elevation: 1,
   },
   dayHeaders: {
     flexDirection: 'row',
-    marginBottom: 10,
+    marginBottom: 15,
   },
   dayHeader: {
     flex: 1,
     textAlign: 'center',
     fontSize: 14,
     fontWeight: '600',
-    color: '#7f8c8d',
+    color: '#8e8e93',
+    letterSpacing: -0.2,
   },
   calendarGrid: {
     flexDirection: 'row',
@@ -840,37 +874,38 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
+    borderRadius: 12,
+    marginVertical: 2,
   },
   todayCell: {
-    backgroundColor: '#667eea',
-    borderRadius: 20,
+    backgroundColor: '#1a1a1a',
   },
   workoutDayCell: {
-    backgroundColor: '#e8f5e8',
+    backgroundColor: '#f8f8f8',
   },
   selectedCell: {
-    backgroundColor: '#f39c12',
-    borderRadius: 20,
+    backgroundColor: '#1a1a1a',
   },
   dayText: {
     fontSize: 16,
-    color: '#2c3e50',
+    color: '#1a1a1a',
+    fontWeight: '500',
   },
   todayText: {
-    color: '#fff',
-    fontWeight: 'bold',
+    color: '#ffffff',
+    fontWeight: '700',
   },
   selectedText: {
-    color: '#fff',
-    fontWeight: 'bold',
+    color: '#ffffff',
+    fontWeight: '700',
   },
   workoutIndicator: {
     position: 'absolute',
-    bottom: 2,
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#27ae60',
+    bottom: 4,
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#1a1a1a',
   },
   selectedDateInfo: {
     padding: 20,
@@ -879,12 +914,13 @@ const styles = StyleSheet.create({
   selectedDateText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#2c3e50',
+    color: '#1a1a1a',
+    letterSpacing: -0.2,
   },
   todayLabel: {
     fontSize: 14,
-    color: '#3498db',
-    fontWeight: '600',
+    color: '#8e8e93',
+    fontWeight: '500',
     marginTop: 4,
   },
   workoutSection: {
@@ -898,106 +934,113 @@ const styles = StyleSheet.create({
   },
   workoutTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#2c3e50',
+    fontWeight: '700',
+    color: '#1a1a1a',
+    letterSpacing: -0.3,
   },
   addButton: {
-    backgroundColor: '#667eea',
-    paddingHorizontal: 15,
-    paddingVertical: 8,
+    backgroundColor: '#1a1a1a',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
     borderRadius: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   addButtonText: {
-    color: '#fff',
+    color: '#ffffff',
     fontWeight: '600',
     fontSize: 14,
+    letterSpacing: -0.2,
   },
   cancelWorkoutButton: {
-    backgroundColor: '#e74c3c',
-    paddingHorizontal: 15,
-    paddingVertical: 8,
+    backgroundColor: '#8e8e93',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
     borderRadius: 20,
   },
   cancelWorkoutButtonText: {
-    color: '#fff',
+    color: '#ffffff',
     fontWeight: '600',
     fontSize: 14,
   },
   workoutCard: {
-    backgroundColor: '#fff',
-    borderRadius: 15,
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
     padding: 20,
+    borderWidth: 1,
+    borderColor: '#f2f2f7',
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 2,
+    elevation: 1,
   },
   workoutDate: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#27ae60',
+    color: '#1a1a1a',
     marginBottom: 15,
+    letterSpacing: -0.2,
   },
   exerciseItem: {
     marginBottom: 12,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#ecf0f1',
+    borderBottomColor: '#f2f2f7',
   },
   exerciseName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#2c3e50',
+    color: '#1a1a1a',
     marginBottom: 4,
+    letterSpacing: -0.2,
   },
   exerciseDetails: {
     fontSize: 14,
-    color: '#7f8c8d',
+    color: '#8e8e93',
+    fontWeight: '400',
   },
   notesSection: {
     marginTop: 15,
     paddingTop: 15,
     borderTopWidth: 1,
-    borderTopColor: '#ecf0f1',
+    borderTopColor: '#f2f2f7',
   },
   notesLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#2c3e50',
+    color: '#1a1a1a',
     marginBottom: 5,
   },
   notesText: {
     fontSize: 14,
-    color: '#7f8c8d',
+    color: '#8e8e93',
     fontStyle: 'italic',
   },
   noWorkoutCard: {
-    backgroundColor: '#fff',
-    borderRadius: 15,
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
     padding: 30,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#f2f2f7',
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 2,
+    elevation: 1,
   },
   noWorkoutText: {
     fontSize: 16,
-    color: '#7f8c8d',
+    color: '#8e8e93',
     marginBottom: 8,
+    fontWeight: '500',
   },
   noWorkoutSubtext: {
     fontSize: 14,
-    color: '#bdc3c7',
+    color: '#c7c7cc',
     textAlign: 'center',
+    fontWeight: '400',
   },
   exerciseHeader: {
     flexDirection: 'row',
@@ -1005,7 +1048,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   removeButton: {
-    backgroundColor: '#e74c3c',
+    backgroundColor: '#8e8e93',
     width: 24,
     height: 24,
     borderRadius: 12,
@@ -1013,7 +1056,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   removeButtonText: {
-    color: '#fff',
+    color: '#ffffff',
     fontSize: 16,
     fontWeight: 'bold',
   },
@@ -1021,18 +1064,18 @@ const styles = StyleSheet.create({
     marginTop: 20,
     paddingTop: 20,
     borderTopWidth: 1,
-    borderTopColor: '#ecf0f1',
+    borderTopColor: '#f2f2f7',
   },
   addExerciseButton: {
-    backgroundColor: '#27ae60',
+    backgroundColor: '#1a1a1a',
     paddingVertical: 12,
     paddingHorizontal: 20,
-    borderRadius: 8,
+    borderRadius: 12,
     alignItems: 'center',
     marginBottom: 15,
   },
   addExerciseButtonText: {
-    color: '#fff',
+    color: '#ffffff',
     fontWeight: '600',
     fontSize: 16,
   },
@@ -1041,59 +1084,63 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   saveTemplateButton: {
-    backgroundColor: '#f39c12',
+    backgroundColor: '#8e8e93',
     paddingVertical: 12,
     paddingHorizontal: 20,
-    borderRadius: 8,
+    borderRadius: 12,
     flex: 0.48,
     alignItems: 'center',
   },
   saveTemplateButtonText: {
-    color: '#fff',
+    color: '#ffffff',
     fontWeight: '600',
     fontSize: 14,
   },
   saveWorkoutButton: {
-    backgroundColor: '#667eea',
+    backgroundColor: '#1a1a1a',
     paddingVertical: 12,
     paddingHorizontal: 20,
-    borderRadius: 8,
+    borderRadius: 12,
     flex: 0.48,
     alignItems: 'center',
   },
   saveWorkoutButtonText: {
-    color: '#fff',
+    color: '#ffffff',
     fontWeight: '600',
     fontSize: 14,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   modalContent: {
-    backgroundColor: '#fff',
-    borderRadius: 15,
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
     padding: 20,
     width: '90%',
     maxHeight: '80%',
     minHeight: 200,
+    borderWidth: 1,
+    borderColor: '#f2f2f7',
   },
   modalTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#2c3e50',
+    fontWeight: '700',
+    color: '#1a1a1a',
     marginBottom: 20,
     textAlign: 'center',
+    letterSpacing: -0.3,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
+    borderColor: '#f2f2f7',
+    borderRadius: 12,
     padding: 12,
     fontSize: 16,
     marginBottom: 15,
+    backgroundColor: '#fafafa',
   },
   inputRow: {
     flexDirection: 'row',
@@ -1106,16 +1153,17 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#2c3e50',
+    color: '#1a1a1a',
     marginBottom: 5,
   },
   numberInput: {
     borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
+    borderColor: '#f2f2f7',
+    borderRadius: 12,
     padding: 12,
     fontSize: 16,
     textAlign: 'center',
+    backgroundColor: '#fafafa',
   },
   modalActions: {
     flexDirection: 'row',
@@ -1123,15 +1171,15 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   cancelButton: {
-    backgroundColor: '#95a5a6',
+    backgroundColor: '#8e8e93',
     paddingVertical: 12,
     paddingHorizontal: 20,
-    borderRadius: 8,
+    borderRadius: 12,
     alignItems: 'center',
     marginTop: 15,
   },
   cancelButtonText: {
-    color: '#fff',
+    color: '#ffffff',
     fontWeight: '600',
     fontSize: 16,
   },
@@ -1141,18 +1189,18 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   templateOption: {
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#fafafa',
     padding: 15,
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#ecf0f1',
+    borderColor: '#f2f2f7',
     minHeight: 50,
     justifyContent: 'center',
     flex: 1,
     marginRight: 10,
   },
   deleteTemplateButton: {
-    backgroundColor: '#e74c3c',
+    backgroundColor: '#8e8e93',
     width: 30,
     height: 30,
     borderRadius: 15,
@@ -1160,30 +1208,30 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   deleteTemplateButtonText: {
-    color: '#fff',
+    color: '#ffffff',
     fontSize: 16,
     fontWeight: 'bold',
   },
   startFromScratchOption: {
-    backgroundColor: '#667eea',
-    borderColor: '#667eea',
+    backgroundColor: '#1a1a1a',
+    borderColor: '#1a1a1a',
   },
   startFromScratchText: {
-    color: '#fff',
+    color: '#ffffff',
   },
   templateOptionText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#2c3e50',
+    color: '#1a1a1a',
     marginBottom: 4,
   },
   templateExerciseCount: {
     fontSize: 14,
-    color: '#7f8c8d',
+    color: '#8e8e93',
   },
   noTemplatesText: {
     fontSize: 16,
-    color: '#7f8c8d',
+    color: '#8e8e93',
     textAlign: 'center',
     marginVertical: 20,
     fontStyle: 'italic',
@@ -1191,20 +1239,20 @@ const styles = StyleSheet.create({
   templatePreviewTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#2c3e50',
+    color: '#1a1a1a',
     marginTop: 15,
     marginBottom: 10,
   },
   templatePreview: {
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#fafafa',
     padding: 10,
-    borderRadius: 8,
+    borderRadius: 12,
     marginBottom: 20,
     maxHeight: 150,
   },
   templatePreviewItem: {
     fontSize: 14,
-    color: '#7f8c8d',
+    color: '#8e8e93',
     marginBottom: 5,
   },
   exerciseSelection: {
@@ -1213,14 +1261,14 @@ const styles = StyleSheet.create({
   exerciseSelectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#2c3e50',
+    color: '#1a1a1a',
     marginBottom: 10,
   },
   exerciseScroll: {
     flexDirection: 'row',
   },
   exerciseChip: {
-    backgroundColor: '#667eea',
+    backgroundColor: '#1a1a1a',
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 20,
@@ -1228,7 +1276,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   exerciseChipText: {
-    color: '#fff',
+    color: '#ffffff',
     fontSize: 14,
     fontWeight: '500',
   },
@@ -1244,18 +1292,18 @@ const styles = StyleSheet.create({
   fieldLabel: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#7f8c8d',
+    color: '#8e8e93',
     marginBottom: 4,
     textAlign: 'center',
   },
   fieldInput: {
     borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 6,
+    borderColor: '#f2f2f7',
+    borderRadius: 8,
     padding: 8,
     fontSize: 14,
     textAlign: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: '#fafafa',
   },
 });
 
