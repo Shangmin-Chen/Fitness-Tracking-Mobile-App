@@ -10,6 +10,8 @@ import {
   TextInput,
   Modal,
   FlatList,
+  PanResponder,
+  Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -22,6 +24,7 @@ export default function LogScreen() {
   const [showAddExercise, setShowAddExercise] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
   const [showCreateTemplate, setShowCreateTemplate] = useState(false);
+  const [showExerciseSelection, setShowExerciseSelection] = useState(false);
   const [currentWorkout, setCurrentWorkout] = useState([]);
   const [isCreatingWorkout, setIsCreatingWorkout] = useState(false);
   const [templateName, setTemplateName] = useState('');
@@ -31,11 +34,23 @@ export default function LogScreen() {
     reps: '10',
     weight: '',
   });
+  const [autoSaveTimeout, setAutoSaveTimeout] = useState(null);
+  const [lastSaved, setLastSaved] = useState(null);
+  const [draggedIndex, setDraggedIndex] = useState(null);
 
   // Load data on component mount
   useEffect(() => {
     loadData();
   }, []);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (autoSaveTimeout) {
+        clearTimeout(autoSaveTimeout);
+      }
+    };
+  }, [autoSaveTimeout]);
 
   const loadData = async () => {
     try {
@@ -52,6 +67,21 @@ export default function LogScreen() {
       }
     } catch (error) {
       console.error('Error loading data:', error);
+    }
+  };
+
+  const clearAllData = async () => {
+    try {
+      await AsyncStorage.multiRemove(['workoutLogs', 'templates']);
+      setWorkoutLogs({});
+      setTemplates({});
+      setCurrentWorkout([]);
+      setIsCreatingWorkout(false);
+      setLastSaved(null);
+      Alert.alert('Success', 'All data cleared!');
+    } catch (error) {
+      console.error('Error clearing data:', error);
+      Alert.alert('Error', 'Failed to clear data');
     }
   };
 
@@ -120,14 +150,29 @@ export default function LogScreen() {
     );
   };
 
+  const getDateKey = (day) => {
+    const year = selectedDate.getFullYear();
+    const month = selectedDate.getMonth() + 1;
+    return `${year}-${month}-${day}`;
+  };
+
   const hasWorkout = (day) => {
-    const dateKey = `${currentYear}-${currentMonth + 1}-${day}`;
-    return workoutLogs[dateKey];
+    const dateKey = getDateKey(day);
+    return workoutLogs[dateKey] && !workoutLogs[dateKey].isDraft;
+  };
+
+  const isDraftWorkout = (day) => {
+    const dateKey = getDateKey(day);
+    return workoutLogs[dateKey]?.isDraft;
   };
 
   const handleDatePress = (day) => {
     if (day) {
       setSelectedDate(new Date(currentYear, currentMonth, day));
+      // Clear workout state when changing dates
+      setIsCreatingWorkout(false);
+      setCurrentWorkout([]);
+      setLastSaved(null);
     }
   };
 
@@ -138,8 +183,8 @@ export default function LogScreen() {
     }
     
     // Validate sets and reps are positive numbers
-    const sets = parseInt(newExercise.sets);
-    const reps = parseInt(newExercise.reps);
+    const sets = parseInt(newExercise.sets, 10);
+    const reps = parseInt(newExercise.reps, 10);
     
     if (isNaN(sets) || sets <= 0) {
       Alert.alert('Error', 'Please enter a valid number of sets');
@@ -162,10 +207,158 @@ export default function LogScreen() {
     setCurrentWorkout(prev => [...prev, exercise]);
     setNewExercise({ name: '', sets: '3', reps: '10', weight: '' });
     setShowAddExercise(false);
+    
+    // Trigger auto-save
+    if (autoSaveTimeout) {
+      clearTimeout(autoSaveTimeout);
+    }
+    
+    const timeout = setTimeout(() => {
+      autoSaveWorkout();
+    }, 2000);
+    
+    setAutoSaveTimeout(timeout);
   };
 
   const removeExercise = (exerciseId) => {
     setCurrentWorkout(prev => prev.filter(ex => ex.id !== exerciseId));
+    
+    // Trigger auto-save
+    if (autoSaveTimeout) {
+      clearTimeout(autoSaveTimeout);
+    }
+    
+    const timeout = setTimeout(() => {
+      autoSaveWorkout();
+    }, 2000);
+    
+    setAutoSaveTimeout(timeout);
+  };
+
+
+  const moveExercise = (fromIndex, toIndex) => {
+    if (fromIndex === toIndex) return;
+    
+    setCurrentWorkout(prev => {
+      const exercises = [...prev];
+      const [movedExercise] = exercises.splice(fromIndex, 1);
+      exercises.splice(toIndex, 0, movedExercise);
+      return exercises;
+    });
+    
+    // Trigger auto-save
+    if (autoSaveTimeout) {
+      clearTimeout(autoSaveTimeout);
+    }
+    
+    const timeout = setTimeout(() => {
+      autoSaveWorkout();
+    }, 2000);
+    
+    setAutoSaveTimeout(timeout);
+  };
+
+  const DraggableExerciseItem = ({ exercise, index }) => {
+    const pan = new Animated.ValueXY();
+    
+    const panResponder = PanResponder.create({
+      onMoveShouldSetPanResponder: (evt, gestureState) => {
+        return Math.abs(gestureState.dx) > 10 || Math.abs(gestureState.dy) > 10;
+      },
+      onPanResponderGrant: () => {
+        setDraggedIndex(index);
+        pan.setOffset({
+          x: pan.x._value,
+          y: pan.y._value
+        });
+        pan.setValue({ x: 0, y: 0 });
+      },
+      onPanResponderMove: Animated.event(
+        [null, { dx: pan.x, dy: pan.y }],
+        { useNativeDriver: false }
+      ),
+      onPanResponderRelease: (evt, gestureState) => {
+        pan.flattenOffset();
+        setDraggedIndex(null);
+        
+        // Calculate new position based on gesture
+        const moveDistance = gestureState.dy;
+        const itemHeight = 80; // Approximate height of each item
+        const newIndex = Math.round(index + moveDistance / itemHeight);
+        
+        if (newIndex >= 0 && newIndex < currentWorkout.length && newIndex !== index) {
+          moveExercise(index, newIndex);
+        }
+        
+        // Reset position
+        Animated.spring(pan, {
+          toValue: { x: 0, y: 0 },
+          useNativeDriver: false,
+        }).start();
+      },
+    });
+    
+    return (
+      <Animated.View
+        style={[
+          styles.exerciseItem,
+          draggedIndex === index && styles.draggedItem,
+          {
+            transform: [{ translateX: pan.x }, { translateY: pan.y }]
+          }
+        ]}
+        {...panResponder.panHandlers}
+      >
+        <View style={styles.exerciseHeader}>
+          <View style={styles.dragHandle}>
+            <Ionicons name="reorder-three" size={20} color="#c7c7cc" />
+          </View>
+          <View style={styles.exerciseContent}>
+            <Text style={styles.exerciseName}>{exercise.name}</Text>
+            <TouchableOpacity 
+              style={styles.removeButton}
+              onPress={() => removeExercise(exercise.id)}
+            >
+              <Ionicons name="trash-outline" size={18} color="#FF3B30" />
+            </TouchableOpacity>
+          </View>
+        </View>
+        
+        <View style={styles.exerciseFields}>
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>Sets</Text>
+            <TextInput
+              style={styles.fieldInput}
+              placeholder="3"
+              value={exercise.sets}
+              onChangeText={(text) => updateExerciseField(exercise.id, 'sets', text)}
+              keyboardType="numeric"
+            />
+          </View>
+          
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>Reps</Text>
+            <TextInput
+              style={styles.fieldInput}
+              placeholder="10"
+              value={exercise.reps}
+              onChangeText={(text) => updateExerciseField(exercise.id, 'reps', text)}
+              keyboardType="numeric"
+            />
+          </View>
+          
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>Weight</Text>
+            <TextInput
+              style={styles.fieldInput}
+              placeholder="135 lbs"
+              value={exercise.weight}
+              onChangeText={(text) => updateExerciseField(exercise.id, 'weight', text)}
+            />
+          </View>
+        </View>
+      </Animated.View>
+    );
   };
 
   const saveWorkout = async () => {
@@ -183,8 +376,8 @@ export default function LogScreen() {
     
     // Validate that sets and reps are positive numbers
     const invalidExercises = currentWorkout.filter(ex => {
-      const sets = parseInt(ex.sets);
-      const reps = parseInt(ex.reps);
+      const sets = parseInt(ex.sets, 10);
+      const reps = parseInt(ex.reps, 10);
       return isNaN(sets) || sets <= 0 || isNaN(reps) || reps <= 0;
     });
     
@@ -193,22 +386,24 @@ export default function LogScreen() {
       return;
     }
     
-    const dateKey = `${currentYear}-${currentMonth + 1}-${selectedDate.getDate()}`;
-    const newWorkout = {
+    const dateKey = getDateKey(selectedDate.getDate());
+    const completedWorkout = {
       id: Date.now(),
       exercises: currentWorkout.map(ex => ({
         ...ex,
-        sets: parseInt(ex.sets),
-        reps: parseInt(ex.reps),
+        sets: parseInt(ex.sets, 10),
+        reps: parseInt(ex.reps, 10),
         weight: ex.weight || 'Body Weight',
       })),
       notes: '',
       date: selectedDate.toISOString(),
+      isDraft: false, // Mark as completed
+      completedAt: new Date().toISOString(),
     };
     
     const updatedLogs = {
       ...workoutLogs,
-      [dateKey]: newWorkout,
+      [dateKey]: completedWorkout,
     };
     
     setWorkoutLogs(updatedLogs);
@@ -217,9 +412,47 @@ export default function LogScreen() {
     setCurrentWorkout([]);
     setIsCreatingWorkout(false);
     
+    // Clear auto-save timeout
+    if (autoSaveTimeout) {
+      clearTimeout(autoSaveTimeout);
+      setAutoSaveTimeout(null);
+    }
+    
     // Haptic feedback
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    Alert.alert('Success', 'Workout saved successfully!');
+    Alert.alert('Success', 'Workout saved! 🎉');
+  };
+
+  const deleteWorkout = () => {
+    Alert.alert(
+      'Delete Workout',
+      'Are you sure you want to delete this workout?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            const dateKey = getDateKey(selectedDate.getDate());
+            const updatedLogs = { ...workoutLogs };
+            delete updatedLogs[dateKey];
+            
+            setWorkoutLogs(updatedLogs);
+            await saveWorkoutLogs(updatedLogs);
+            
+            setCurrentWorkout([]);
+            setIsCreatingWorkout(false);
+            
+            // Haptic feedback
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+            Alert.alert('Success', 'Workout deleted');
+          },
+        },
+      ]
+    );
   };
 
   const saveAsTemplate = () => {
@@ -265,6 +498,7 @@ export default function LogScreen() {
     setCurrentWorkout(template.exercises.map(ex => ({ ...ex, id: Date.now() + Math.random() })));
     setIsCreatingWorkout(true);
     setShowTemplates(false);
+    setLastSaved(null);
   };
 
   const deleteTemplate = (templateId) => {
@@ -302,14 +536,9 @@ export default function LogScreen() {
 
 
   const startNewWorkout = () => {
-    // Always start with empty workout, show template modal only if templates exist
     setCurrentWorkout([]);
-    if (Object.values(templates).length > 0) {
-      setShowTemplates(true);
-    } else {
-      setShowTemplates(false);
-      setIsCreatingWorkout(true);
-    }
+    setIsCreatingWorkout(true);
+    setLastSaved(null);
   };
 
   const addDefaultExercise = (exerciseName) => {
@@ -322,6 +551,17 @@ export default function LogScreen() {
     };
     
     setCurrentWorkout(prev => [...prev, exercise]);
+    
+    // Trigger auto-save
+    if (autoSaveTimeout) {
+      clearTimeout(autoSaveTimeout);
+    }
+    
+    const timeout = setTimeout(() => {
+      autoSaveWorkout();
+    }, 2000);
+    
+    setAutoSaveTimeout(timeout);
   };
 
   const updateExerciseField = (exerciseId, field, value) => {
@@ -332,6 +572,51 @@ export default function LogScreen() {
           : ex
       )
     );
+    
+    // Auto-save after 2 seconds of inactivity
+    if (autoSaveTimeout) {
+      clearTimeout(autoSaveTimeout);
+    }
+    
+    const timeout = setTimeout(() => {
+      autoSaveWorkout();
+    }, 2000);
+    
+    setAutoSaveTimeout(timeout);
+    
+    // Update last saved time to show user that changes are being tracked
+    setLastSaved(new Date());
+  };
+
+  const autoSaveWorkout = async () => {
+    if (currentWorkout.length === 0 || !isCreatingWorkout) return;
+    
+    try {
+      const dateKey = getDateKey(selectedDate.getDate());
+      const workoutData = {
+        id: Date.now(),
+        exercises: currentWorkout.map(ex => ({
+          ...ex,
+          sets: parseInt(ex.sets, 10) || 0,
+          reps: parseInt(ex.reps, 10) || 0,
+          weight: ex.weight || 'Body Weight',
+        })),
+        notes: '',
+        date: selectedDate.toISOString(),
+        isDraft: true, // Mark as draft for auto-saved workouts
+      };
+      
+      const updatedLogs = {
+        ...workoutLogs,
+        [dateKey]: workoutData,
+      };
+      
+      setWorkoutLogs(updatedLogs);
+      await saveWorkoutLogs(updatedLogs);
+      setLastSaved(new Date());
+    } catch (error) {
+      console.error('Error auto-saving workout:', error);
+    }
   };
 
   // Handle navigation month changes
@@ -343,6 +628,10 @@ export default function LogScreen() {
       newDate.setMonth(newDate.getMonth() - 1);
     }
     setSelectedDate(newDate);
+    // Clear workout state when changing months
+    setIsCreatingWorkout(false);
+    setCurrentWorkout([]);
+    setLastSaved(null);
   };
 
   const getMonthName = (month) => {
@@ -358,7 +647,7 @@ export default function LogScreen() {
     return days[day];
   };
 
-  const selectedDateKey = `${currentYear}-${currentMonth + 1}-${selectedDate.getDate()}`;
+  const selectedDateKey = getDateKey(selectedDate.getDate());
   const selectedWorkout = workoutLogs[selectedDateKey];
 
   return (
@@ -430,7 +719,9 @@ export default function LogScreen() {
                     >
                       {day}
                     </Text>
-                    {hasWorkout(day) && <View style={styles.workoutIndicator} />}
+                    {hasWorkout(day) && (
+                      <View style={styles.workoutIndicator} />
+                    )}
                   </>
                 )}
               </TouchableOpacity>
@@ -459,18 +750,35 @@ export default function LogScreen() {
               </TouchableOpacity>
             )}
             {isCreatingWorkout && (
-              <TouchableOpacity style={styles.cancelWorkoutButton} onPress={() => {
-                setIsCreatingWorkout(false);
-                setCurrentWorkout([]);
-              }}>
-                <Text style={styles.cancelWorkoutButtonText}>Cancel</Text>
-              </TouchableOpacity>
+              <View style={styles.workoutActionButtons}>
+                <TouchableOpacity style={styles.saveWorkoutButton} onPress={saveWorkout}>
+                  <Ionicons name="save" size={16} color="#ffffff" style={{ marginRight: 4 }} />
+                  <Text style={styles.saveWorkoutButtonText}>Save Workout</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+            {selectedWorkout && !selectedWorkout.isDraft && (
+              <View style={styles.workoutActionButtons}>
+                <TouchableOpacity style={styles.addButton} onPress={startNewWorkout}>
+                  <Ionicons name="add" size={16} color="#ffffff" style={{ marginRight: 4 }} />
+                  <Text style={styles.addButtonText}>New Workout</Text>
+                </TouchableOpacity>
+              </View>
             )}
           </View>
 
-          {selectedWorkout ? (
+          {selectedWorkout && !selectedWorkout.isDraft ? (
             <View style={styles.workoutCard}>
-              <Text style={styles.workoutDate}>Workout Completed</Text>
+              <View style={styles.workoutHeader}>
+                <Text style={styles.workoutDate}>Workout Completed</Text>
+                <TouchableOpacity 
+                  style={styles.deleteWorkoutXButton} 
+                  onPress={deleteWorkout}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="close" size={16} color="#FF3B30" />
+                </TouchableOpacity>
+              </View>
               {selectedWorkout.exercises.map((exercise, index) => (
                 <View key={index} style={styles.exerciseItem}>
                   <Text style={styles.exerciseName}>{exercise.name}</Text>
@@ -488,88 +796,36 @@ export default function LogScreen() {
             </View>
           ) : isCreatingWorkout ? (
             <View style={styles.workoutCard}>
-              <Text style={styles.workoutDate}>Workout</Text>
-              
-              {/* Default Exercise Selection */}
-              <View style={styles.exerciseSelection}>
-                <Text style={styles.exerciseSelectionTitle}>Add Exercises:</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.exerciseScroll}>
-                  {defaultExercises.map((exerciseName) => (
-                    <TouchableOpacity
-                      key={exerciseName}
-                      style={styles.exerciseChip}
-                      onPress={() => addDefaultExercise(exerciseName)}
-                    >
-                      <Text style={styles.exerciseChipText}>{exerciseName}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
+              <View style={styles.workoutHeader}>
+                <Text style={styles.workoutDate}>Workout in Progress</Text>
+                <TouchableOpacity 
+                  style={styles.deleteWorkoutXButton} 
+                  onPress={deleteWorkout}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="close" size={16} color="#FF3B30" />
+                </TouchableOpacity>
               </View>
 
+              {/* Add Exercise Frame */}
+                <TouchableOpacity 
+                style={styles.addExerciseFrame}
+                  onPress={() => setShowExerciseSelection(true)}
+                activeOpacity={0.7}
+                >
+                <Ionicons name="add" size={32} color="#1a1a1a" />
+                <Text style={styles.addExerciseFrameText}>add exercise</Text>
+                </TouchableOpacity>
+
               {/* Current Exercises with Editable Fields */}
-              {currentWorkout.map((exercise) => (
-                <View key={exercise.id} style={styles.exerciseItem}>
-                  <View style={styles.exerciseHeader}>
-                    <Text style={styles.exerciseName}>{exercise.name}</Text>
-                    <TouchableOpacity 
-                      style={styles.removeButton}
-                      onPress={() => removeExercise(exercise.id)}
-                    >
-                      <Text style={styles.removeButtonText}>×</Text>
-                    </TouchableOpacity>
-                  </View>
-                  
-                  <View style={styles.exerciseFields}>
-                    <View style={styles.fieldGroup}>
-                      <Text style={styles.fieldLabel}>Sets</Text>
-                      <TextInput
-                        style={styles.fieldInput}
-                        placeholder="3"
-                        value={exercise.sets}
-                        onChangeText={(text) => updateExerciseField(exercise.id, 'sets', text)}
-                        keyboardType="numeric"
-                      />
-                    </View>
-                    
-                    <View style={styles.fieldGroup}>
-                      <Text style={styles.fieldLabel}>Reps</Text>
-                      <TextInput
-                        style={styles.fieldInput}
-                        placeholder="10"
-                        value={exercise.reps}
-                        onChangeText={(text) => updateExerciseField(exercise.id, 'reps', text)}
-                        keyboardType="numeric"
-                      />
-                    </View>
-                    
-                    <View style={styles.fieldGroup}>
-                      <Text style={styles.fieldLabel}>Weight</Text>
-                      <TextInput
-                        style={styles.fieldInput}
-                        placeholder="135 lbs"
-                        value={exercise.weight}
-                        onChangeText={(text) => updateExerciseField(exercise.id, 'weight', text)}
-                      />
-                    </View>
-                  </View>
-                </View>
+              {currentWorkout.map((exercise, index) => (
+                <DraggableExerciseItem 
+                  key={exercise.id} 
+                  exercise={exercise} 
+                  index={index} 
+                />
               ))}
               
-              <View style={styles.workoutActions}>
-                <TouchableOpacity style={styles.addExerciseButton} onPress={() => setShowAddExercise(true)}>
-                  <Text style={styles.addExerciseButtonText}>+ Custom Exercise</Text>
-                </TouchableOpacity>
-                
-                <View style={styles.saveActions}>
-                  <TouchableOpacity style={styles.saveTemplateButton} onPress={saveAsTemplate}>
-                    <Text style={styles.saveTemplateButtonText}>Save as Template</Text>
-                  </TouchableOpacity>
-                  
-                  <TouchableOpacity style={styles.saveWorkoutButton} onPress={saveWorkout}>
-                    <Text style={styles.saveWorkoutButtonText}>Save Workout</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
             </View>
           ) : (
             <View style={styles.noWorkoutCard}>
@@ -581,6 +837,7 @@ export default function LogScreen() {
           )}
         </View>
       </ScrollView>
+
 
       {/* Add Exercise Modal */}
       <Modal
@@ -653,7 +910,6 @@ export default function LogScreen() {
         animationType="slide"
         transparent={true}
         onRequestClose={() => setShowTemplates(false)}
-
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -661,11 +917,25 @@ export default function LogScreen() {
             
             <TouchableOpacity 
               style={[styles.templateOption, styles.startFromScratchOption]}
-              onPress={startFromScratch}
+              onPress={() => {
+                startFromScratch();
+                setShowTemplates(false);
+              }}
               activeOpacity={0.7}
             >
               <Text style={[styles.templateOptionText, styles.startFromScratchText]}>Start from scratch</Text>
             </TouchableOpacity>
+            
+            {currentWorkout.length > 0 && (
+              <TouchableOpacity 
+                style={[styles.templateOption, styles.saveTemplateOption]}
+                onPress={saveAsTemplate}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="save-outline" size={16} color="#1a1a1a" />
+                <Text style={styles.templateOptionText}>Save current workout as template</Text>
+              </TouchableOpacity>
+            )}
             
             {Object.values(templates).length > 0 ? (
               <FlatList
@@ -750,6 +1020,48 @@ export default function LogScreen() {
                 <Text style={styles.addButtonText}>Create Template</Text>
               </TouchableOpacity>
             </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Exercise Selection Modal */}
+      <Modal
+        visible={showExerciseSelection}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowExerciseSelection(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.exerciseSelectionModal}>
+            <View style={styles.exerciseSelectionHeader}>
+              <Text style={styles.exerciseSelectionTitle}>Select Exercises</Text>
+              <TouchableOpacity 
+                style={styles.closeButton}
+                onPress={() => setShowExerciseSelection(false)}
+              >
+                <Ionicons name="close" size={24} color="#8e8e93" />
+              </TouchableOpacity>
+            </View>
+            
+            <FlatList
+              data={defaultExercises}
+              keyExtractor={(item) => item}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={styles.exerciseListItem}
+                  onPress={() => {
+                    addDefaultExercise(item);
+                    setShowExerciseSelection(false);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.exerciseListItemText}>{item}</Text>
+                  <Ionicons name="chevron-forward" size={20} color="#c7c7cc" />
+                </TouchableOpacity>
+              )}
+              showsVerticalScrollIndicator={false}
+              style={styles.exerciseList}
+            />
           </View>
         </View>
       </Modal>
@@ -952,16 +1264,34 @@ const styles = StyleSheet.create({
     fontSize: 14,
     letterSpacing: -0.2,
   },
-  cancelWorkoutButton: {
-    backgroundColor: '#8e8e93',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 20,
+  workoutActionButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 20,
+    paddingTop: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#f2f2f7',
   },
-  cancelWorkoutButtonText: {
+  saveWorkoutButton: {
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flex: 0.48,
+    shadowColor: '#007AFF',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  saveWorkoutButtonText: {
     color: '#ffffff',
     fontWeight: '600',
-    fontSize: 14,
+    fontSize: 16,
+    letterSpacing: -0.2,
   },
   workoutCard: {
     backgroundColor: '#ffffff',
@@ -981,19 +1311,36 @@ const styles = StyleSheet.create({
     color: '#1a1a1a',
     marginBottom: 15,
     letterSpacing: -0.2,
+    flex: 1,
+  },
+  deleteWorkoutXButton: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#f8f8f8',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e5e5e7',
   },
   exerciseItem: {
-    marginBottom: 12,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f2f2f7',
+    backgroundColor: '#ffffff',
+    marginBottom: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#f2f2f7',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   exerciseName: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 17,
+    fontWeight: '500',
     color: '#1a1a1a',
-    marginBottom: 4,
     letterSpacing: -0.2,
+    flex: 1,
   },
   exerciseDetails: {
     fontSize: 14,
@@ -1044,27 +1391,42 @@ const styles = StyleSheet.create({
   },
   exerciseHeader: {
     flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+  },
+  dragHandle: {
+    width: 24,
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  exerciseContent: {
+    flex: 1,
+    flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  draggedItem: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
+    zIndex: 1000,
+  },
   removeButton: {
-    backgroundColor: '#8e8e93',
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#f8f8f8',
   },
   removeButtonText: {
     color: '#ffffff',
     fontSize: 16,
     fontWeight: 'bold',
-  },
-  workoutActions: {
-    marginTop: 20,
-    paddingTop: 20,
-    borderTopWidth: 1,
-    borderTopColor: '#f2f2f7',
   },
   addExerciseButton: {
     backgroundColor: '#1a1a1a',
@@ -1092,19 +1454,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   saveTemplateButtonText: {
-    color: '#ffffff',
-    fontWeight: '600',
-    fontSize: 14,
-  },
-  saveWorkoutButton: {
-    backgroundColor: '#1a1a1a',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 12,
-    flex: 0.48,
-    alignItems: 'center',
-  },
-  saveWorkoutButtonText: {
     color: '#ffffff',
     fontWeight: '600',
     fontSize: 14,
@@ -1219,6 +1568,13 @@ const styles = StyleSheet.create({
   startFromScratchText: {
     color: '#ffffff',
   },
+  saveTemplateOption: {
+    backgroundColor: '#f0f8ff',
+    borderColor: '#007AFF',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   templateOptionText: {
     fontSize: 16,
     fontWeight: '600',
@@ -1283,27 +1639,127 @@ const styles = StyleSheet.create({
   exerciseFields: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 10,
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+    gap: 12,
   },
   fieldGroup: {
     flex: 1,
-    marginHorizontal: 4,
   },
   fieldLabel: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 13,
+    fontWeight: '500',
     color: '#8e8e93',
-    marginBottom: 4,
+    marginBottom: 6,
     textAlign: 'center',
   },
   fieldInput: {
     borderWidth: 1,
-    borderColor: '#f2f2f7',
+    borderColor: '#d1d1d6',
     borderRadius: 8,
-    padding: 8,
-    fontSize: 14,
+    padding: 12,
+    fontSize: 16,
     textAlign: 'center',
-    backgroundColor: '#fafafa',
+    backgroundColor: '#ffffff',
+    color: '#1a1a1a',
+  },
+  addWorkoutSection: {
+    marginBottom: 20,
+  },
+  addExerciseFrame: {
+    backgroundColor: '#f8f8f8',
+    paddingHorizontal: 24,
+    paddingVertical: 40,
+    borderRadius: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#e5e5e7',
+    borderStyle: 'dashed',
+    width: '100%',
+    marginBottom: 20,
+  },
+  addExerciseFrameText: {
+    color: '#1a1a1a',
+    fontWeight: '600',
+    fontSize: 18,
+    marginLeft: 8,
+    letterSpacing: -0.2,
+  },
+  addWorkoutButton: {
+    backgroundColor: '#f8f8f8',
+    paddingHorizontal: 24,
+    paddingVertical: 20,
+    borderRadius: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#e5e5e7',
+    borderStyle: 'dashed',
+    width: '100%',
+  },
+  addWorkoutButtonText: {
+    color: '#1a1a1a',
+    fontWeight: '600',
+    fontSize: 16,
+    marginLeft: 8,
+    letterSpacing: -0.2,
+  },
+  exerciseSelectionModal: {
+    backgroundColor: '#ffffff',
+    borderRadius: 20,
+    width: '90%',
+    maxHeight: '80%',
+    borderWidth: 1,
+    borderColor: '#f2f2f7',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  exerciseSelectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    paddingBottom: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f2f2f7',
+  },
+  exerciseSelectionTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1a1a1a',
+    letterSpacing: -0.3,
+  },
+  closeButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#f8f8f8',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  exerciseList: {
+    maxHeight: 400,
+  },
+  exerciseListItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f2f2f7',
+  },
+  exerciseListItemText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#1a1a1a',
+    letterSpacing: -0.2,
   },
 });
 
