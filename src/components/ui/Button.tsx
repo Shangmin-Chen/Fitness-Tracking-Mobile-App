@@ -17,8 +17,8 @@ const Button: React.FC<ButtonProps> = ({
   accessibilityLabel,
   testID,
 }) => {
-  const getButtonStyle = (): (ViewStyle | undefined)[] => {
-    const baseStyle: ViewStyle[] = [styles.button, styles[`button_${size}` as keyof typeof styles]];
+  const getButtonStyle = () => {
+    const baseStyle = [styles.button, styles[`button_${size}` as keyof typeof styles]];
     
     if (disabled || loading) {
       baseStyle.push(styles.button_disabled);
@@ -29,8 +29,8 @@ const Button: React.FC<ButtonProps> = ({
     return [...baseStyle, style];
   };
 
-  const getTextStyle = (): (TextStyle | undefined)[] => {
-    const baseStyle: TextStyle[] = [styles.buttonText, styles[`buttonText_${size}` as keyof typeof styles]];
+  const getTextStyle = () => {
+    const baseStyle = [styles.buttonText, styles[`buttonText_${size}` as keyof typeof styles]];
     
     if (disabled || loading) {
       baseStyle.push(styles.buttonText_disabled);
@@ -43,7 +43,7 @@ const Button: React.FC<ButtonProps> = ({
 
   return (
     <TouchableOpacity
-      style={getButtonStyle()}
+      style={getButtonStyle() as any}
       onPress={onPress}
       disabled={disabled || loading}
       activeOpacity={0.8}
@@ -59,7 +59,7 @@ const Button: React.FC<ButtonProps> = ({
         />
       ) : (
         <>
-          {icon && <Ionicons name={icon} size={16} color={getTextStyle().color} style={styles.buttonIcon} />}
+          {icon && <Ionicons name={icon as any} size={16} color={variant === 'primary' ? COLORS.surface : COLORS.text.primary} style={styles.buttonIcon} />}
           <Text style={getTextStyle()}>{title}</Text>
         </>
       )}
@@ -140,16 +140,5 @@ const styles = StyleSheet.create({
   },
 });
 
-Button.defaultProps = {
-  variant: 'primary',
-  size: 'medium',
-  icon: undefined,
-  loading: false,
-  disabled: false,
-  style: undefined,
-  textStyle: undefined,
-  accessibilityLabel: undefined,
-  testID: undefined,
-};
 
 export default Button;

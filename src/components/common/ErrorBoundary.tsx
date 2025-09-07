@@ -115,8 +115,5 @@ const styles = StyleSheet.create({
   },
 });
 
-ErrorBoundary.defaultProps = {
-  showRetry: true,
-};
 
 export default ErrorBoundary;

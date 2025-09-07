@@ -8,4 +8,7 @@ config.resolver.alias = {
   'react-native-reanimated': require.resolve('react-native-reanimated'),
 };
 
+// Add TypeScript support
+config.resolver.sourceExts.push('ts', 'tsx');
+
 module.exports = config;

@@ -55,14 +55,14 @@ const DraggableExercise = ({
     transform: [
       { translateY: translateY.value },
       { scale: scale.value }
-    ],
+    ] as any,
     zIndex: draggedIndex === index ? 1000 : 1,
     elevation: interpolate(scale.value, [1, 1.05], [2, 8]),
   }));
 
   return (
     <GestureDetector gesture={gesture}>
-      <Animated.View style={[styles.exerciseItem, animatedStyle]}>
+      <Animated.View style={[styles.exerciseItem, animatedStyle] as any}>
         <View style={styles.exerciseHeader}>
           <View style={styles.dragHandle}>
             <Ionicons name="reorder-three" size={24} color={COLORS.text.secondary} />
