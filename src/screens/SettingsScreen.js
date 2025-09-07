@@ -11,6 +11,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Header } from '../components';
+import { COLORS, SPACING, TYPOGRAPHY, BORDER_RADIUS } from '../constants';
 
 export default function SettingsScreen() {
   const [notifications, setNotifications] = useState(true);
@@ -55,7 +57,7 @@ export default function SettingsScreen() {
     <TouchableOpacity style={styles.settingItem} onPress={onPress} disabled={!onPress}>
       <View style={styles.settingLeft}>
         <View style={styles.settingIcon}>
-          <Ionicons name={icon} size={20} color="#1a1a1a" />
+          <Ionicons name={icon} size={20} color={COLORS.text.primary} />
         </View>
         <View style={styles.settingContent}>
           <Text style={styles.settingTitle}>{title}</Text>
@@ -65,7 +67,7 @@ export default function SettingsScreen() {
       <View style={styles.settingRight}>
         {rightComponent}
         {showArrow && onPress && (
-          <Ionicons name="chevron-forward" size={16} color="#8e8e93" />
+          <Ionicons name="chevron-forward" size={16} color={COLORS.text.secondary} />
         )}
       </View>
     </TouchableOpacity>
@@ -80,19 +82,23 @@ export default function SettingsScreen() {
     </View>
   );
 
+  const headerPattern = (
+    <>
+      <View style={styles.patternTriangle} />
+      <View style={[styles.patternTriangle, styles.patternTriangleSmall]} />
+      <View style={[styles.patternTriangle, styles.patternTriangleLarge]} />
+    </>
+  );
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Settings</Text>
-          <Text style={styles.headerSubtitle}>Customize your experience</Text>
-          <View style={styles.headerPattern}>
-            <View style={styles.patternTriangle} />
-            <View style={[styles.patternTriangle, styles.patternTriangleSmall]} />
-            <View style={[styles.patternTriangle, styles.patternTriangleLarge]} />
-          </View>
-        </View>
+        <Header
+          title="Settings"
+          subtitle="Customize your experience"
+          pattern={headerPattern}
+        />
 
         {/* App Settings */}
         <SettingSection title="App Settings">
@@ -104,8 +110,8 @@ export default function SettingsScreen() {
               <Switch
                 value={notifications}
                 onValueChange={setNotifications}
-                trackColor={{ false: '#c7c7cc', true: '#1a1a1a' }}
-                thumbColor={notifications ? '#ffffff' : '#f8f8f8'}
+                trackColor={{ false: COLORS.text.disabled, true: COLORS.text.primary }}
+                thumbColor={notifications ? COLORS.surface : '#f8f8f8'}
               />
             }
             showArrow={false}
@@ -118,8 +124,8 @@ export default function SettingsScreen() {
               <Switch
                 value={hapticFeedback}
                 onValueChange={setHapticFeedback}
-                trackColor={{ false: '#c7c7cc', true: '#1a1a1a' }}
-                thumbColor={hapticFeedback ? '#ffffff' : '#f8f8f8'}
+                trackColor={{ false: COLORS.text.disabled, true: COLORS.text.primary }}
+                thumbColor={hapticFeedback ? COLORS.surface : '#f8f8f8'}
               />
             }
             showArrow={false}
@@ -132,8 +138,8 @@ export default function SettingsScreen() {
               <Switch
                 value={darkMode}
                 onValueChange={setDarkMode}
-                trackColor={{ false: '#c7c7cc', true: '#1a1a1a' }}
-                thumbColor={darkMode ? '#ffffff' : '#f8f8f8'}
+                trackColor={{ false: COLORS.text.disabled, true: COLORS.text.primary }}
+                thumbColor={darkMode ? COLORS.surface : '#f8f8f8'}
               />
             }
             showArrow={false}
@@ -244,37 +250,10 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fafafa',
+    backgroundColor: COLORS.background,
   },
   scrollView: {
     flex: 1,
-  },
-  header: {
-    padding: 30,
-    paddingTop: 20,
-    backgroundColor: '#ffffff',
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
-    position: 'relative',
-    overflow: 'hidden',
-  },
-  headerTitle: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: '#1a1a1a',
-    marginBottom: 8,
-    letterSpacing: -0.5,
-  },
-  headerSubtitle: {
-    fontSize: 16,
-    color: '#8e8e93',
-    fontWeight: '400',
-  },
-  headerPattern: {
-    position: 'absolute',
-    top: 20,
-    right: 20,
-    zIndex: 1,
   },
   patternTriangle: {
     width: 0,
@@ -285,7 +264,7 @@ const styles = StyleSheet.create({
     borderLeftColor: 'transparent',
     borderRightColor: 'transparent',
     borderBottomColor: '#f0f0f0',
-    marginBottom: 8,
+    marginBottom: SPACING.sm,
   },
   patternTriangleSmall: {
     borderLeftWidth: 4,
@@ -300,33 +279,33 @@ const styles = StyleSheet.create({
     marginLeft: 6,
   },
   section: {
-    marginTop: 30,
-    paddingHorizontal: 20,
+    marginTop: SPACING.xxxl,
+    paddingHorizontal: SPACING.xl,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#1a1a1a',
-    marginBottom: 15,
+    color: COLORS.text.primary,
+    marginBottom: SPACING.lg,
     letterSpacing: -0.3,
   },
   sectionContent: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
+    backgroundColor: COLORS.surface,
+    borderRadius: BORDER_RADIUS.lg,
     borderWidth: 1,
-    borderColor: '#f2f2f7',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 2,
+    borderColor: COLORS.border,
+    shadowColor: COLORS.shadow.color,
+    shadowOffset: COLORS.shadow.offset,
+    shadowOpacity: COLORS.shadow.opacity,
+    shadowRadius: COLORS.shadow.radius,
     elevation: 1,
   },
   settingItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 20,
+    padding: SPACING.xl,
     borderBottomWidth: 1,
-    borderBottomColor: '#f2f2f7',
+    borderBottomColor: COLORS.border,
   },
   settingLeft: {
     flexDirection: 'row',
@@ -340,21 +319,21 @@ const styles = StyleSheet.create({
     backgroundColor: '#f8f8f8',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 15,
+    marginRight: SPACING.lg,
   },
   settingContent: {
     flex: 1,
   },
   settingTitle: {
-    fontSize: 16,
+    ...TYPOGRAPHY.body,
     fontWeight: '600',
-    color: '#1a1a1a',
+    color: COLORS.text.primary,
     marginBottom: 2,
     letterSpacing: -0.2,
   },
   settingSubtitle: {
-    fontSize: 14,
-    color: '#8e8e93',
+    ...TYPOGRAPHY.bodySmall,
+    color: COLORS.text.secondary,
     fontWeight: '400',
   },
   settingRight: {
@@ -363,27 +342,26 @@ const styles = StyleSheet.create({
   },
   appInfo: {
     alignItems: 'center',
-    padding: 30,
-    marginTop: 20,
+    padding: SPACING.xxxl,
+    marginTop: SPACING.xl,
   },
   appName: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#1a1a1a',
-    marginBottom: 8,
+    ...TYPOGRAPHY.h3,
+    color: COLORS.text.primary,
+    marginBottom: SPACING.sm,
     letterSpacing: -0.3,
   },
   appDescription: {
-    fontSize: 14,
-    color: '#8e8e93',
+    ...TYPOGRAPHY.bodySmall,
+    color: COLORS.text.secondary,
     textAlign: 'center',
     lineHeight: 20,
-    marginBottom: 12,
+    marginBottom: SPACING.md,
     fontWeight: '400',
   },
   appVersion: {
     fontSize: 12,
-    color: '#c7c7cc',
+    color: COLORS.text.disabled,
     fontWeight: '500',
   },
 });
