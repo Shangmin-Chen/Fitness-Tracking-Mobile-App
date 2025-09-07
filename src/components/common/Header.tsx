@@ -53,10 +53,5 @@ const styles = StyleSheet.create({
   },
 });
 
-Header.defaultProps = {
-  subtitle: undefined,
-  pattern: undefined,
-  style: undefined,
-};
 
 export default Header;

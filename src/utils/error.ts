@@ -50,7 +50,7 @@ export const retryWithBackoff = async <T>(
   maxRetries: number = 3, 
   delay: number = 1000
 ): Promise<T> => {
-  let lastError: Error;
+  let lastError: Error = new Error('Unknown error');
   
   for (let i = 0; i <= maxRetries; i++) {
     try {

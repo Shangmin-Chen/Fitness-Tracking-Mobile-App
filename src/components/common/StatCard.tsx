@@ -8,7 +8,7 @@ const StatCard: React.FC<StatCardProps> = ({ title, value, subtitle, icon, style
   <View style={[styles.statCard, style]}>
     <View style={styles.statHeader}>
       <View style={styles.statIconContainer}>
-        <Ionicons name={icon} size={18} color={COLORS.text.primary} />
+        <Ionicons name={icon as any} size={18} color={COLORS.text.primary} />
       </View>
       <Text style={styles.statValue}>{value}</Text>
     </View>

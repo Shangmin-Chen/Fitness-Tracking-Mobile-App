@@ -138,7 +138,14 @@ const HomeScreen: React.FC<NavigationProps> = ({ navigation }) => {
           <Text style={styles.sectionTitle}>Quick Actions</Text>
           <View style={styles.actionsGrid}>
             {quickActions.map((action, index) => (
-              <ActionCard key={index} action={action} style={styles.actionCard} />
+              <ActionCard 
+                key={index} 
+                title={action.title}
+                subtitle={action.subtitle}
+                icon={action.icon}
+                onPress={action.onPress}
+                style={styles.actionCard} 
+              />
             ))}
           </View>
         </View>

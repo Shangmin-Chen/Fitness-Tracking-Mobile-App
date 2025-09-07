@@ -11,7 +11,7 @@ const ActionCard: React.FC<ActionCardProps> = ({ title, subtitle, icon, onPress,
     activeOpacity={0.6}
   >
     <View style={styles.actionIcon}>
-      <Ionicons name={icon} size={20} color={COLORS.text.primary} />
+      <Ionicons name={icon as any} size={20} color={COLORS.text.primary} />
     </View>
     <View style={styles.actionContent}>
       <Text style={styles.actionTitle}>{title}</Text>

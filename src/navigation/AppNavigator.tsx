@@ -12,12 +12,12 @@ import { COLORS } from '../constants';
 
 const Tab = createBottomTabNavigator();
 
-export default function AppNavigator(): JSX.Element {
+export default function AppNavigator() {
   return (
-    <Tab.Navigator
+    <Tab.Navigator id="MainTabs"
       screenOptions={({ route }) => ({
         tabBarIcon: ({ focused, color, size }: { focused: boolean; color: string; size: number }) => {
-          let iconName: string;
+          let iconName: string = 'home';
 
           if (route.name === 'Home') {
             iconName = focused ? 'home' : 'home-outline';
@@ -31,7 +31,7 @@ export default function AppNavigator(): JSX.Element {
             iconName = focused ? 'settings' : 'settings-outline';
           }
 
-          return <Ionicons name={iconName} size={size} color={color} />;
+          return <Ionicons name={iconName as any} size={size} color={color} />;
         },
         tabBarActiveTintColor: COLORS.text.primary,
         tabBarInactiveTintColor: COLORS.text.secondary,
