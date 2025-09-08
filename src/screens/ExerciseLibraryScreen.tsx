@@ -91,7 +91,14 @@ export default function ExerciseLibraryScreen() {
         {/* Exercise List */}
         <View style={styles.exercisesContainer}>
           {filteredExercises.map((exercise, index) => (
-            <ExerciseCard key={index} exercise={exercise} />
+            <ExerciseCard 
+              key={index} 
+              exercise={exercise} 
+              onPress={() => {
+                // Handle exercise selection
+                console.log('Selected exercise:', exercise.name);
+              }}
+            />
           ))}
         </View>
 

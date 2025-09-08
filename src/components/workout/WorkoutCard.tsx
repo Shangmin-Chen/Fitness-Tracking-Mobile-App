@@ -1,9 +1,16 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS } from '../../constants';
+import { Workout } from '../../types';
 
-const WorkoutCard = ({ workout, onDelete, style }) => (
+interface WorkoutCardProps {
+  workout: Workout;
+  onDelete?: () => void;
+  style?: ViewStyle | ViewStyle[];
+}
+
+const WorkoutCard: React.FC<WorkoutCardProps> = ({ workout, onDelete, style }) => (
   <View style={[styles.workoutCard, style]}>
     {onDelete && (
       <TouchableOpacity style={styles.deleteButton} onPress={onDelete}>

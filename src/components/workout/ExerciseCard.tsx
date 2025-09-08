@@ -1,10 +1,17 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS } from '../../constants';
 import { getDifficultyColor } from '../../utils/workout';
+import { ExerciseInfo } from '../../types';
 
-const ExerciseCard = ({ exercise, onPress, style }) => (
+interface ExerciseCardProps {
+  exercise: ExerciseInfo;
+  onPress: () => void;
+  style?: ViewStyle | ViewStyle[];
+}
+
+const ExerciseCard: React.FC<ExerciseCardProps> = ({ exercise, onPress, style }) => (
   <TouchableOpacity style={[styles.exerciseCard, style]} onPress={onPress} activeOpacity={0.6}>
     <View style={styles.exerciseHeader}>
       <Text style={styles.exerciseName}>{exercise.name}</Text>
