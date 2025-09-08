@@ -36,6 +36,7 @@ export interface HeaderProps extends BaseProps {
 
 // Workout related types
 export interface WorkoutSet {
+  id: ID;
   reps?: number;
   weight?: number;
   duration?: number;

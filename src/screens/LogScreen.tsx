@@ -215,6 +215,7 @@ const LogScreen: React.FC = () => {
                     key={exercise.id}
                     exercise={exercise}
                     index={i}
+                    totalExercises={currentWorkout.length}
                     onRemove={removeExercise}
                     onAddSet={addSet}
                     onRemoveSet={removeSet}

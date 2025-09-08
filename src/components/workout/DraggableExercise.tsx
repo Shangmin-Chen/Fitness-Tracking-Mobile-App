@@ -10,14 +10,30 @@ import Animated, {
   interpolate,
 } from 'react-native-reanimated';
 import { COLORS, SPACING, TYPOGRAPHY, BORDER_RADIUS } from '../../constants';
+import { Exercise } from '../../types';
+
+interface DraggableExerciseProps {
+  exercise: Exercise;
+  index: number;
+  totalExercises: number;
+  onRemove: (id: string | number) => void;
+  onAddSet: (exerciseId: string | number) => void;
+  onRemoveSet: (exerciseId: string | number, setId: string | number) => void;
+  onUpdateSet: (exerciseId: string | number, setId: string | number, field: string, value: string) => void;
+  draggedIndex: number;
+  onDragStart: (index: number) => void;
+  onDragEnd: () => void;
+  onMove: (fromIndex: number, toIndex: number) => void;
+}
 
 const CARD_HEIGHT = 120;
 const CARD_MARGIN = 8;
 const TOTAL_CARD_HEIGHT = CARD_HEIGHT + CARD_MARGIN;
 
-const DraggableExercise = ({ 
+const DraggableExercise: React.FC<DraggableExerciseProps> = ({ 
   exercise, 
   index, 
+  totalExercises,
   onRemove, 
   onAddSet, 
   onRemoveSet, 
@@ -40,7 +56,7 @@ const DraggableExercise = ({
     })
     .onEnd(() => {
       const newIndex = Math.round(translateY.value / TOTAL_CARD_HEIGHT);
-      const targetIndex = Math.max(0, Math.min(exercise.sets.length - 1, index + newIndex));
+      const targetIndex = Math.max(0, Math.min(totalExercises - 1, index + newIndex));
       
       if (targetIndex !== index) {
         runOnJS(onMove)(index, targetIndex);
@@ -100,7 +116,7 @@ const DraggableExercise = ({
                 />
                 <TextInput
                   style={styles.setInput}
-                  value={set.weight}
+                  value={String(set.weight || '')}
                   onChangeText={(text) => onUpdateSet(exercise.id, set.id, 'weight', text)}
                   placeholder="Weight"
                 />
