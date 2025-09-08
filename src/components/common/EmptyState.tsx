@@ -1,9 +1,16 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS } from '../../constants';
 
-const EmptyState = ({ icon, title, subtitle, style }) => (
+interface EmptyStateProps {
+  icon: keyof typeof import('@expo/vector-icons').Ionicons.glyphMap;
+  title: string;
+  subtitle?: string;
+  style?: ViewStyle | ViewStyle[];
+}
+
+const EmptyState: React.FC<EmptyStateProps> = ({ icon, title, subtitle, style }) => (
   <View style={[styles.emptyState, style]}>
     <Ionicons name={icon} size={48} color="#bdc3c7" />
     <Text style={styles.emptyStateText}>{title}</Text>

@@ -53,7 +53,16 @@ export default function SettingsScreen() {
     Alert.alert('Backup Data', 'Cloud backup feature coming soon!');
   };
 
-  const SettingItem = ({ icon, title, subtitle, onPress, rightComponent, showArrow = true }) => (
+  interface SettingItemProps {
+    icon: keyof typeof import('@expo/vector-icons').Ionicons.glyphMap;
+    title: string;
+    subtitle?: string;
+    onPress?: () => void;
+    rightComponent?: React.ReactNode;
+    showArrow?: boolean;
+  }
+
+  const SettingItem: React.FC<SettingItemProps> = ({ icon, title, subtitle, onPress, rightComponent, showArrow = true }) => (
     <TouchableOpacity style={styles.settingItem} onPress={onPress} disabled={!onPress}>
       <View style={styles.settingLeft}>
         <View style={styles.settingIcon}>
