@@ -8,7 +8,9 @@ import Animated, {
   runOnJS,
   withSpring,
   interpolate,
+  withTiming,
 } from 'react-native-reanimated';
+import * as Haptics from 'expo-haptics';
 import { COLORS, SPACING, TYPOGRAPHY, BORDER_RADIUS } from '../../constants';
 import { Exercise } from '../../types';
 
@@ -45,11 +47,15 @@ const DraggableExercise: React.FC<DraggableExerciseProps> = ({
 }) => {
   const translateY = useSharedValue(0);
   const scale = useSharedValue(1);
+  const opacity = useSharedValue(1);
+  const isDragging = draggedIndex === index;
 
   const gesture = Gesture.Pan()
     .onStart(() => {
-      scale.value = withSpring(1.05);
+      scale.value = withSpring(1.05, { damping: 15, stiffness: 200 });
+      opacity.value = withTiming(0.95, { duration: 200 });
       runOnJS(onDragStart)(index);
+      runOnJS(Haptics.impactAsync)(Haptics.ImpactFeedbackStyle.Medium);
     })
     .onUpdate((e) => {
       translateY.value = e.translationY;
@@ -60,10 +66,12 @@ const DraggableExercise: React.FC<DraggableExerciseProps> = ({
       
       if (targetIndex !== index) {
         runOnJS(onMove)(index, targetIndex);
+        runOnJS(Haptics.impactAsync)(Haptics.ImpactFeedbackStyle.Light);
       }
       
-      translateY.value = withSpring(0);
-      scale.value = withSpring(1);
+      translateY.value = withSpring(0, { damping: 15, stiffness: 150 });
+      scale.value = withSpring(1, { damping: 15, stiffness: 150 });
+      opacity.value = withTiming(1, { duration: 200 });
       runOnJS(onDragEnd)();
     });
 
@@ -72,20 +80,42 @@ const DraggableExercise: React.FC<DraggableExerciseProps> = ({
       { translateY: translateY.value },
       { scale: scale.value }
     ] as any,
-    zIndex: draggedIndex === index ? 1000 : 1,
+    opacity: opacity.value,
+    zIndex: isDragging ? 1000 : 1,
     elevation: interpolate(scale.value, [1, 1.05], [2, 8]),
+    shadowColor: isDragging ? COLORS.primary : 'transparent',
+    shadowOffset: {
+      width: 0,
+      height: interpolate(scale.value, [1, 1.05], [2, 8]),
+    },
+    shadowOpacity: interpolate(scale.value, [1, 1.05], [0.1, 0.3]),
+    shadowRadius: interpolate(scale.value, [1, 1.05], [4, 12]),
   }));
 
   return (
     <GestureDetector gesture={gesture}>
       <Animated.View style={[styles.exerciseItem, animatedStyle] as any}>
-        <View style={styles.exerciseHeader}>
-          <View style={styles.dragHandle}>
-            <Ionicons name="reorder-three" size={24} color={COLORS.text.secondary} />
+        <View style={[styles.exerciseHeader, isDragging && styles.draggingHeader]}>
+          <View style={[styles.dragHandle, isDragging && styles.draggingHandle]}>
+            <Ionicons 
+              name="reorder-three" 
+              size={24} 
+              color={isDragging ? COLORS.info : COLORS.text.secondary} 
+            />
           </View>
-          <Text style={styles.exerciseName}>{exercise.name}</Text>
-          <TouchableOpacity onPress={() => onRemove(exercise.id)}>
-            <Ionicons name="trash-outline" size={18} color={COLORS.error} />
+          <Text style={[styles.exerciseName, isDragging && styles.draggingText]}>
+            {exercise.name}
+          </Text>
+          <TouchableOpacity 
+            onPress={() => onRemove(exercise.id)}
+            style={styles.removeButton}
+            disabled={isDragging}
+          >
+            <Ionicons 
+              name="trash-outline" 
+              size={18} 
+              color={isDragging ? COLORS.text.disabled : COLORS.error} 
+            />
           </TouchableOpacity>
         </View>
 
@@ -134,24 +164,44 @@ const DraggableExercise: React.FC<DraggableExerciseProps> = ({
 
 const styles = StyleSheet.create({
   exerciseItem: {
-    backgroundColor: '#f9f9f9',
-    borderRadius: 10,
-    padding: SPACING.sm,
-    marginBottom: SPACING.sm,
+    backgroundColor: COLORS.surface,
+    borderRadius: BORDER_RADIUS.md,
+    padding: SPACING.md,
+    marginBottom: CARD_MARGIN,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   exerciseHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: SPACING.sm,
   },
+  draggingHeader: {
+    backgroundColor: COLORS.info + '10',
+    borderRadius: BORDER_RADIUS.sm,
+    padding: SPACING.xs,
+    margin: -SPACING.xs,
+  },
   dragHandle: {
     marginRight: SPACING.sm,
+    padding: SPACING.xs,
+    borderRadius: BORDER_RADIUS.sm,
+  },
+  draggingHandle: {
+    backgroundColor: COLORS.info + '20',
   },
   exerciseName: {
     ...TYPOGRAPHY.body,
     fontWeight: '600',
     color: COLORS.text.primary,
     flex: 1,
+  },
+  draggingText: {
+    color: COLORS.info,
+  },
+  removeButton: {
+    padding: SPACING.xs,
+    borderRadius: BORDER_RADIUS.sm,
   },
   setsContainer: {
     marginTop: SPACING.xs,

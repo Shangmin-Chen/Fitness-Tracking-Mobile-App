@@ -17,11 +17,11 @@ import {
   Header, 
   WorkoutCard, 
   Calendar, 
-  DraggableExercise, 
   AddSetModal, 
   ExerciseSelectionModal,
   ErrorBoundary 
 } from '../components';
+import AnimatedExerciseList from '../components/workout/AnimatedExerciseList';
 import { MONTHS, DAYS, COLORS, SPACING, TYPOGRAPHY, BORDER_RADIUS } from '../constants';
 import { getDateKey } from '../utils';
 
@@ -210,22 +210,17 @@ const LogScreen: React.FC = () => {
                   <Text style={styles.addExerciseText}>Add Exercise</Text>
                 </TouchableOpacity>
 
-                {currentWorkout.map((exercise, i) => (
-                  <DraggableExercise
-                    key={exercise.id}
-                    exercise={exercise}
-                    index={i}
-                    totalExercises={currentWorkout.length}
-                    onRemove={removeExercise}
-                    onAddSet={addSet}
-                    onRemoveSet={removeSet}
-                    onUpdateSet={updateSet}
-                    onDragStart={handleDragStart}
-                    onDragEnd={handleDragEnd}
-                    onMove={handleMoveExercise}
-                    draggedIndex={draggedIndex}
-                  />
-                ))}
+                <AnimatedExerciseList
+                  exercises={currentWorkout}
+                  draggedIndex={draggedIndex}
+                  onDragStart={handleDragStart}
+                  onDragEnd={handleDragEnd}
+                  onMove={handleMoveExercise}
+                  onRemove={removeExercise}
+                  onAddSet={addSet}
+                  onRemoveSet={removeSet}
+                  onUpdateSet={updateSet}
+                />
               </View>
             ) : (
               <View style={styles.emptyCard}>
