@@ -1,369 +1,247 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   SafeAreaView,
-  ScrollView,
   TouchableOpacity,
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
-
-import { useWorkoutData, useWorkoutForm } from '../hooks';
-import { 
-  Header, 
-  WorkoutCard, 
-  Calendar, 
-  DraggableExercise, 
-  AddSetModal, 
-  ExerciseSelectionModal,
-  ErrorBoundary 
-} from '../components';
-import { MONTHS, DAYS, COLORS, SPACING, TYPOGRAPHY, BORDER_RADIUS } from '../constants';
-import { getDateKey } from '../utils';
+import DraggableFlatList, { RenderItemParams } from 'react-native-draggable-flatlist';
+import { useWorkoutCreation, useWorkoutData } from '../hooks';
+import { Header, DraggableExerciseItem, ExerciseSelectionModal, EmptyState } from '../components';
+import { COLORS, SPACING, TYPOGRAPHY, BORDER_RADIUS } from '../constants';
+import { Exercise } from '../types';
 
 const LogScreen: React.FC = () => {
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const [draggedIndex, setDraggedIndex] = useState(-1);
   const [showExerciseSelection, setShowExerciseSelection] = useState(false);
   
-  const { workoutLogs, addWorkout, deleteWorkout, error } = useWorkoutData();
   const {
-    currentWorkout,
-    isCreatingWorkout,
-    showAddSetModal,
-    selectedExerciseId,
-    newSet,
-    setNewSet,
-    setShowAddSetModal,
-    startNewWorkout,
+    exercises,
     addExercise,
     removeExercise,
     addSet,
-    confirmAddSet,
     removeSet,
     updateSet,
-    moveExercise,
-    resetForm,
-  } = useWorkoutForm();
+    reorderExercises,
+    setExercisesOrder,
+    clearWorkout,
+    getWorkoutData,
+  } = useWorkoutCreation();
 
-  const selectedDateKey = useMemo(() => getDateKey(selectedDate), [selectedDate]);
-  const selectedWorkout = useMemo(() => workoutLogs[selectedDateKey], [workoutLogs, selectedDateKey]);
+  const { addWorkout } = useWorkoutData();
 
-  const handleSaveWorkout = useCallback(async () => {
-    if (!currentWorkout.length) {
-      Alert.alert('Error', 'Add at least one exercise');
+  const handleAddExercise = (exerciseName: string) => {
+    addExercise(exerciseName);
+  };
+
+  const handleAddSet = (exerciseId: string | number) => {
+    addSet(exerciseId, { reps: 0, weight: 0 });
+  };
+
+  const handleRemoveSet = (exerciseId: string | number, setId: string | number) => {
+    removeSet(exerciseId, setId);
+  };
+
+  const handleUpdateSet = (exerciseId: string | number, setId: string | number, field: keyof any, value: any) => {
+    updateSet(exerciseId, setId, { [field]: value });
+  };
+
+  const handleSaveWorkout = async () => {
+    if (exercises.length === 0) {
+      Alert.alert('No Exercises', 'Add at least one exercise to save your workout.');
       return;
     }
 
-    const invalidExercises = currentWorkout.filter(ex => !ex.sets.length);
-    if (invalidExercises.length) {
-      Alert.alert('Error', 'All exercises need at least one set');
+    const exercisesWithSets = exercises.filter(ex => ex.sets.length > 0);
+    if (exercisesWithSets.length === 0) {
+      Alert.alert('No Sets', 'Add at least one set to an exercise to save your workout.');
       return;
     }
-
-    const workout = {
-      id: Date.now(),
-      exercises: currentWorkout,
-      date: selectedDate.toISOString(),
-      completedAt: new Date().toISOString(),
-    };
 
     try {
-      await addWorkout({ ...workout, dateKey: selectedDateKey });
-      resetForm();
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      const workoutData = getWorkoutData();
+      const workout = {
+        id: Date.now(),
+        exercises: workoutData.exercises,
+        date: new Date().toISOString(),
+        completedAt: new Date().toISOString(),
+        dateKey: new Date().toISOString().split('T')[0],
+      };
+
+      await addWorkout(workout);
+      clearWorkout();
+      Alert.alert('Success', 'Workout saved successfully!');
     } catch (error) {
       Alert.alert('Error', 'Failed to save workout. Please try again.');
     }
-  }, [currentWorkout, selectedDate, selectedDateKey, addWorkout, resetForm]);
+  };
 
-  const handleDeleteWorkout = useCallback(() => {
-    Alert.alert('Delete Workout', 'Are you sure?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await deleteWorkout(selectedDateKey);
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-          } catch (error) {
-            Alert.alert('Error', 'Failed to delete workout. Please try again.');
-          }
-        }
-      }
-    ]);
-  }, [selectedDateKey, deleteWorkout]);
-
-  const changeMonth = useCallback((direction) => {
-    const newDate = new Date(selectedDate);
-    newDate.setMonth(newDate.getMonth() + (direction === 'next' ? 1 : -1));
-    setSelectedDate(newDate);
-    resetForm();
-  }, [selectedDate, resetForm]);
-
-  const handleAddExercise = useCallback((name) => {
-    addExercise(name);
-    setShowExerciseSelection(false);
-  }, [addExercise]);
-
-  const handleConfirmAddSet = useCallback(() => {
-    if (confirmAddSet()) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    }
-  }, [confirmAddSet]);
-
-  const handleDragStart = useCallback((index) => {
-    setDraggedIndex(index);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-  }, []);
-
-  const handleDragEnd = useCallback(() => {
-    setDraggedIndex(-1);
-  }, []);
-
-  const handleMoveExercise = useCallback((fromIndex, toIndex) => {
-    moveExercise(fromIndex, toIndex);
-  }, [moveExercise]);
-
-  if (error) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <ErrorBoundary showRetry={false}>
-          <View style={styles.errorContainer}>
-            <Text style={styles.errorText}>Failed to load workout data</Text>
-          </View>
-        </ErrorBoundary>
-      </SafeAreaView>
+  const handleClearWorkout = () => {
+    Alert.alert(
+      'Clear Workout',
+      'Are you sure you want to clear all exercises? This action cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clear',
+          style: 'destructive',
+          onPress: clearWorkout,
+        },
+      ]
     );
-  }
+  };
+
+  const renderExerciseItem = ({ item, drag, isActive }: RenderItemParams<Exercise>) => (
+    <DraggableExerciseItem
+      exercise={item}
+      onRemove={removeExercise}
+      onAddSet={handleAddSet}
+      onRemoveSet={handleRemoveSet}
+      onUpdateSet={handleUpdateSet}
+      drag={drag}
+      isActive={isActive}
+    />
+  );
 
   return (
-    <GestureHandlerRootView style={styles.container}>
-      <SafeAreaView style={styles.container}>
-        <ScrollView showsVerticalScrollIndicator={false}>
-          {/* Header */}
-          <Header title="Workout Log" />
+    <SafeAreaView style={styles.container}>
+      {/* Header */}
+      <Header
+        title="Create Workout"
+        subtitle="Add exercises and sets"
+      />
 
-          {/* Calendar Header */}
-          <View style={styles.calendarHeader}>
-            <TouchableOpacity onPress={() => changeMonth('prev')}>
-              <Ionicons name="chevron-back" size={20} color={COLORS.text.primary} />
-            </TouchableOpacity>
-            <Text style={styles.monthYear}>
-              {MONTHS[selectedDate.getMonth()]} {selectedDate.getFullYear()}
-            </Text>
-            <TouchableOpacity onPress={() => changeMonth('next')}>
-              <Ionicons name="chevron-forward" size={20} color={COLORS.text.primary} />
-            </TouchableOpacity>
-          </View>
+      {/* Action Buttons */}
+      <View style={styles.actionButtons}>
+        <TouchableOpacity
+          style={styles.addButton}
+          onPress={() => setShowExerciseSelection(true)}
+        >
+          <Ionicons name="add" size={18} color={COLORS.surface} />
+          <Text style={styles.addButtonText}>Add Exercise</Text>
+        </TouchableOpacity>
 
-          {/* Calendar */}
-          <Calendar
-            selectedDate={selectedDate}
-            onDateSelect={setSelectedDate}
-            onMonthChange={changeMonth}
-            workoutLogs={workoutLogs}
+        {exercises.length > 0 && (
+          <>
+            <TouchableOpacity
+              style={styles.saveButton}
+              onPress={handleSaveWorkout}
+            >
+              <Ionicons name="checkmark" size={18} color={COLORS.surface} />
+              <Text style={styles.saveButtonText}>Save</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.clearButton}
+              onPress={handleClearWorkout}
+            >
+              <Ionicons name="trash-outline" size={18} color={COLORS.surface} />
+              <Text style={styles.clearButtonText}>Clear</Text>
+            </TouchableOpacity>
+          </>
+        )}
+      </View>
+
+      {/* Exercise List */}
+      <View style={styles.exerciseListContainer}>
+        {exercises.length > 0 ? (
+          <DraggableFlatList
+            data={exercises}
+            renderItem={renderExerciseItem}
+            keyExtractor={(item) => item.id.toString()}
+            onDragEnd={({ data }) => {
+              // Update the exercises array with the new order
+              setExercisesOrder(data);
+            }}
+            contentContainerStyle={styles.draggableList}
           />
+        ) : (
+          <EmptyState
+            icon="fitness-outline"
+            title="No exercises yet"
+            subtitle="Add your first exercise to start creating your workout"
+          />
+        )}
+      </View>
 
-          {/* Selected Date */}
-          <View style={styles.selectedDateInfo}>
-            <Text style={styles.selectedDateText}>
-              {DAYS[selectedDate.getDay()]}, {MONTHS[selectedDate.getMonth()]} {selectedDate.getDate()}
-            </Text>
-          </View>
-
-          {/* Workout Section */}
-          <View style={styles.workoutSection}>
-            <View style={styles.workoutHeader}>
-              <Text style={styles.workoutTitle}>Workout</Text>
-              {!selectedWorkout && !isCreatingWorkout && (
-                <TouchableOpacity style={styles.addButton} onPress={startNewWorkout}>
-                  <Ionicons name="add" size={16} color={COLORS.surface} />
-                  <Text style={styles.addButtonText}>New</Text>
-                </TouchableOpacity>
-              )}
-              {isCreatingWorkout && (
-                <TouchableOpacity style={styles.saveButton} onPress={handleSaveWorkout}>
-                  <Ionicons name="save" size={16} color={COLORS.surface} />
-                  <Text style={styles.saveButtonText}>Save</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-
-            {selectedWorkout ? (
-              <WorkoutCard 
-                workout={selectedWorkout} 
-                onDelete={handleDeleteWorkout}
-              />
-            ) : isCreatingWorkout ? (
-              <View style={styles.workoutCard}>
-                <TouchableOpacity
-                  style={styles.addExerciseButton}
-                  onPress={() => setShowExerciseSelection(true)}
-                >
-                  <Ionicons name="add" size={24} color={COLORS.info} />
-                  <Text style={styles.addExerciseText}>Add Exercise</Text>
-                </TouchableOpacity>
-
-                {currentWorkout.map((exercise, i) => (
-                  <DraggableExercise
-                    key={exercise.id}
-                    exercise={exercise}
-                    index={i}
-                    totalExercises={currentWorkout.length}
-                    onRemove={removeExercise}
-                    onAddSet={addSet}
-                    onRemoveSet={removeSet}
-                    onUpdateSet={updateSet}
-                    onDragStart={handleDragStart}
-                    onDragEnd={handleDragEnd}
-                    onMove={handleMoveExercise}
-                    draggedIndex={draggedIndex}
-                  />
-                ))}
-              </View>
-            ) : (
-              <View style={styles.emptyCard}>
-                <Text style={styles.emptyText}>No workout for this day</Text>
-              </View>
-            )}
-          </View>
-        </ScrollView>
-
-        {/* Exercise Selection Modal */}
-        <ExerciseSelectionModal
-          visible={showExerciseSelection}
-          onClose={() => setShowExerciseSelection(false)}
-          onSelectExercise={handleAddExercise}
-        />
-
-        {/* Add Set Modal */}
-        <AddSetModal
-          visible={showAddSetModal}
-          onClose={() => setShowAddSetModal(false)}
-          newSet={newSet}
-          setNewSet={setNewSet}
-          onConfirm={handleConfirmAddSet}
-        />
-      </SafeAreaView>
-    </GestureHandlerRootView>
+      {/* Exercise Selection Modal */}
+      <ExerciseSelectionModal
+        visible={showExerciseSelection}
+        onClose={() => setShowExerciseSelection(false)}
+        onSelectExercise={handleAddExercise}
+      />
+    </SafeAreaView>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: COLORS.background,
   },
-  calendarHeader: {
+  actionButtons: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: SPACING.lg,
-    backgroundColor: COLORS.surface,
-  },
-  monthYear: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: COLORS.text.primary,
-  },
-  selectedDateInfo: {
-    padding: SPACING.lg,
-    backgroundColor: COLORS.surface,
-    marginHorizontal: SPACING.sm,
-    marginVertical: SPACING.xs,
-    borderRadius: 10,
-  },
-  selectedDateText: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.text.primary,
-  },
-  workoutSection: {
-    margin: SPACING.sm,
-  },
-  workoutHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: SPACING.sm,
-  },
-  workoutTitle: {
-    ...TYPOGRAPHY.h4,
-    color: COLORS.text.primary,
+    paddingHorizontal: SPACING.xl,
+    paddingVertical: SPACING.lg,
+    gap: SPACING.sm,
   },
   addButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.info,
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.xs,
-    borderRadius: 15,
+    backgroundColor: COLORS.text.primary,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+    borderRadius: BORDER_RADIUS.sm,
+    flex: 1,
+    justifyContent: 'center',
   },
   addButtonText: {
+    ...TYPOGRAPHY.body,
     color: COLORS.surface,
-    marginLeft: SPACING.xs,
-    fontWeight: '600',
+    marginLeft: SPACING.sm,
+    fontWeight: '500',
   },
   saveButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.success,
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.xs,
-    borderRadius: 15,
+    backgroundColor: COLORS.text.secondary,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+    borderRadius: BORDER_RADIUS.sm,
+    justifyContent: 'center',
+    minWidth: 80,
   },
   saveButtonText: {
+    ...TYPOGRAPHY.body,
     color: COLORS.surface,
-    marginLeft: SPACING.xs,
-    fontWeight: '600',
+    marginLeft: SPACING.sm,
+    fontWeight: '500',
   },
-  workoutCard: {
-    backgroundColor: COLORS.surface,
-    borderRadius: 10,
-    padding: SPACING.lg,
-  },
-  addExerciseButton: {
+  clearButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: COLORS.text.disabled,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+    borderRadius: BORDER_RADIUS.sm,
     justifyContent: 'center',
-    padding: SPACING.lg,
-    borderWidth: 2,
-    borderColor: COLORS.info,
-    borderStyle: 'dashed',
-    borderRadius: 10,
-    marginBottom: SPACING.sm,
+    minWidth: 80,
   },
-  addExerciseText: {
-    color: COLORS.info,
+  clearButtonText: {
+    ...TYPOGRAPHY.body,
+    color: COLORS.surface,
     marginLeft: SPACING.sm,
-    ...TYPOGRAPHY.body,
+    fontWeight: '500',
   },
-  emptyCard: {
-    backgroundColor: COLORS.surface,
-    borderRadius: 10,
-    padding: SPACING.xxxl,
-    alignItems: 'center',
-  },
-  emptyText: {
-    ...TYPOGRAPHY.body,
-    color: '#999',
-  },
-  errorContainer: {
+  exerciseListContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: SPACING.xl,
+    paddingHorizontal: SPACING.xl,
   },
-  errorText: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.error,
-    textAlign: 'center',
+  draggableList: {
+    paddingBottom: SPACING.xl,
   },
 });
 
-export default React.memo(LogScreen);
+export default LogScreen;
