@@ -32,11 +32,19 @@
 - **Styling**: StyleSheet with centralized theme system
 
 ### **Key Features**
-- Workout logging with drag-and-drop exercise reordering
+- Today's workout logging with draggable exercise list
 - Exercise library with categories and difficulty levels
 - Progress tracking with statistics and charts
-- Calendar view for workout history
+- Workout data management and storage
 - Settings and preferences management
+- Dashboard with workout overview and quick actions
+
+### **Recent Changes**
+- **LogScreen**: Implemented as today's workout log with draggable exercise list
+- **Components**: Added DraggableExerciseItem and ExerciseSelectionModal for workout logging
+- **Hooks**: Added useWorkoutCreation hook for managing workout creation and exercise reordering
+- **Utils**: Simplified date utilities (kept only getGreeting function)
+- **Bug Fixes**: Fixed dragging behavior, iOS modal presentation, exercise reordering logic, and GestureHandler setup
 
 ---
 
@@ -92,12 +100,10 @@ The app follows a **component-based architecture** with clear separation of conc
     │   │   ├── Modal.tsx            # Modal dialog component
     │   │   └── index.ts             # UI components export
     │   ├── workout/                 # Workout-specific components
-    │   │   ├── AddSetModal.tsx      # Add workout set modal
-    │   │   ├── Calendar.tsx         # Workout calendar view
-    │   │   ├── DraggableExercise.tsx # Draggable exercise item
     │   │   ├── ExerciseCard.tsx     # Exercise display card
-    │   │   ├── ExerciseSelectionModal.tsx # Exercise picker
     │   │   ├── WorkoutCard.tsx      # Workout summary card
+    │   │   ├── DraggableExerciseItem.tsx # Draggable exercise item for workout logging
+    │   │   ├── ExerciseSelectionModal.tsx # Exercise selection modal
     │   │   └── index.ts             # Workout components export
     │   └── index.ts                 # All components export
     ├── constants/                   # App constants and configuration
@@ -109,20 +115,20 @@ The app follows a **component-based architecture** with clear separation of conc
     ├── hooks/                       # Custom React hooks
     │   ├── usePerformance.ts        # Performance monitoring hook
     │   ├── useWorkoutData.ts        # Workout data management
-    │   ├── useWorkoutForm.ts        # Workout form state
+    │   ├── useTodayWorkout.ts       # Today's workout management
     │   └── index.ts                 # Hooks export
     ├── navigation/                  # Navigation configuration
     │   └── AppNavigator.tsx         # Main navigation setup
     ├── screens/                     # Screen components
     │   ├── ExerciseLibraryScreen.tsx # Exercise library
     │   ├── HomeScreen.tsx           # Home dashboard
-    │   ├── LogScreen.tsx            # Workout logging
+    │   ├── LogScreen.tsx            # Today's workout logging with draggable list
     │   ├── ProgressScreen.tsx       # Progress tracking
     │   └── SettingsScreen.tsx       # App settings
     ├── types/                       # TypeScript type definitions
     │   └── index.ts                 # All type definitions
     ├── utils/                       # Utility functions
-    │   ├── date.ts                  # Date manipulation utilities
+    │   ├── date.ts                  # Date utilities (greeting function)
     │   ├── error.ts                 # Error handling utilities
     │   ├── workout.ts               # Workout calculation utilities
     │   └── index.ts                 # Utils export
@@ -234,7 +240,7 @@ export default Component;
 
 #### **Workout Components** (`src/components/workout/`)
 - **Purpose**: Workout-specific functionality
-- **Examples**: DraggableExercise, WorkoutCard, Calendar
+- **Examples**: WorkoutCard, ExerciseCard, DraggableExerciseItem, ExerciseSelectionModal
 - **Naming**: Feature-specific names
 
 ### **Component Rules**
@@ -269,6 +275,9 @@ AppNavigator (Bottom Tab Navigator)
 - **Type**: Bottom Tab Navigator
 - **Icons**: Ionicons with focused/unfocused states
 - **Styling**: Custom tab bar with theme colors
+
+### **Screen Status**
+- **LogScreen**: Implemented as today's workout log with draggable exercise list, exercise selection modal, and set management functionality.
 
 ### **Screen Navigation**
 ```typescript
@@ -309,7 +318,7 @@ The app uses **React Hooks** for state management with a custom hook pattern:
 
 #### **Global State Hooks**
 - **`useWorkoutData`**: Manages workout logs and statistics
-- **`useWorkoutForm`**: Manages current workout form state
+- **`useWorkoutCreation`**: Manages workout creation, exercise reordering, and set management
 - **`usePerformance`**: Tracks app performance metrics
 
 #### **Local State Hooks**
@@ -576,6 +585,78 @@ const styles = StyleSheet.create({
 export default Screen;
 ```
 
+### **Workout Logging Screen Pattern** (LogScreen Example)
+```typescript
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity } from 'react-native';
+import DraggableFlatList from 'react-native-draggable-flatlist';
+import { useWorkoutCreation } from '../hooks';
+import { Header, DraggableExerciseItem, ExerciseSelectionModal } from '../components';
+import { COLORS, SPACING, TYPOGRAPHY } from '../constants';
+
+const LogScreen: React.FC = () => {
+  const [showExerciseSelection, setShowExerciseSelection] = useState(false);
+  const { exercises, addExercise, removeExercise, addSet, setExercisesOrder } = useWorkoutCreation();
+
+  const renderExerciseItem = ({ item, drag, isActive }) => (
+    <DraggableExerciseItem
+      exercise={item}
+      onRemove={removeExercise}
+      onAddSet={addSet}
+      drag={drag}
+      isActive={isActive}
+    />
+  );
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <Header title="Today's Workout" subtitle="Log your exercises" />
+      
+      <TouchableOpacity
+        style={styles.addButton}
+        onPress={() => setShowExerciseSelection(true)}
+      >
+        <Text style={styles.addButtonText}>Add Exercise</Text>
+      </TouchableOpacity>
+
+      <DraggableFlatList
+        data={exercises}
+        renderItem={renderExerciseItem}
+        keyExtractor={(item) => item.id.toString()}
+        onDragEnd={({ data }) => setExercisesOrder(data)}
+      />
+
+      <ExerciseSelectionModal
+        visible={showExerciseSelection}
+        onClose={() => setShowExerciseSelection(false)}
+        onSelectExercise={addExercise}
+      />
+    </SafeAreaView>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+  },
+  addButton: {
+    backgroundColor: COLORS.info,
+    padding: SPACING.lg,
+    margin: SPACING.lg,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  addButtonText: {
+    ...TYPOGRAPHY.body,
+    color: COLORS.surface,
+    fontWeight: '600',
+  },
+});
+
+export default LogScreen;
+```
+
 ### **Custom Hook Pattern**
 ```typescript
 import { useState, useEffect, useCallback } from 'react';
@@ -750,6 +831,10 @@ style={[style1, style2, conditionalStyle] as any}
 #### **AsyncStorage Error**
 - **Cause**: JSON parsing errors or storage permission issues
 - **Solution**: Add try-catch blocks, validate data before parsing
+
+#### **GestureHandler Error**
+- **Cause**: DraggableFlatList requires GestureHandlerRootView wrapper
+- **Solution**: Wrap the entire app with `<GestureHandlerRootView style={{ flex: 1 }}>` in App.tsx
 
 ### **Performance Issues**
 

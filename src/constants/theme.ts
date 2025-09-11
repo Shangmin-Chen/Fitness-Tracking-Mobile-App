@@ -1,25 +1,25 @@
 import { Colors, Spacing, BorderRadius, Typography } from '../types';
 
 export const COLORS: Colors = {
-  primary: '#1a1a1a',
-  secondary: '#8e8e93',
-  background: '#fafafa',
+  primary: '#2c2c2e',
+  secondary: '#6d6d70',
+  background: '#f2f2f7',
   surface: '#ffffff',
-  border: '#f2f2f7',
-  error: '#FF3B30',
-  success: '#4CAF50',
-  warning: '#FF9500',
-  info: '#007AFF',
+  border: '#e5e5ea',
+  error: '#8e8e93',
+  success: '#6d6d70',
+  warning: '#8e8e93',
+  info: '#6d6d70',
   text: {
-    primary: '#1a1a1a',
-    secondary: '#8e8e93',
+    primary: '#1c1c1e',
+    secondary: '#6d6d70',
     disabled: '#c7c7cc',
   },
   shadow: {
     color: '#000',
     offset: { width: 0, height: 1 },
-    opacity: 0.03,
-    radius: 2,
+    opacity: 0.05,
+    radius: 3,
   },
 };
 
