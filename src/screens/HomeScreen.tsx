@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, ScrollView, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useWorkoutData } from '../hooks';
-import { Header, StatCard, ActionCard, EmptyState, ErrorBoundary } from '../components';
+import { Header, ActionCard, ErrorBoundary } from '../components';
 import { COLORS, SPACING, TYPOGRAPHY, BORDER_RADIUS } from '../constants';
 import { getGreeting } from '../utils';
 import { NavigationProps } from '../types';
@@ -10,30 +10,20 @@ import { NavigationProps } from '../types';
 const { width } = Dimensions.get('window');
 
 const HomeScreen: React.FC<NavigationProps> = ({ navigation }) => {
-  const { workoutStats, recentWorkouts, loading, error } = useWorkoutData();
-  
-  const recentWorkout = useMemo(() => {
-    return recentWorkouts.length > 0 ? recentWorkouts[0] : null;
-  }, [recentWorkouts]);
+  const { error } = useWorkoutData();
 
   const quickActions = useMemo(() => [
     {
-      title: 'Start Workout',
-      subtitle: 'Begin a new workout session',
+      title: 'Create New Workout',
+      subtitle: 'Start a new workout',
       icon: 'fitness',
-      onPress: () => navigation.navigate('Log'),
+      onPress: () => navigation.navigate('Create'),
     },
     {
-      title: 'View Progress',
-      subtitle: 'Track your fitness journey',
-      icon: 'trending-up',
-      onPress: () => navigation.navigate('Progress'),
-    },
-    {
-      title: 'Templates',
-      subtitle: 'Use saved workout routines',
-      icon: 'copy',
-      onPress: () => navigation.navigate('Log'),
+      title: 'History',
+      subtitle: 'View past workouts',
+      icon: 'time',
+      onPress: () => navigation.navigate('History'),
     },
   ], [navigation]);
 
@@ -63,71 +53,11 @@ const HomeScreen: React.FC<NavigationProps> = ({ navigation }) => {
         {/* Header */}
         <Header
           title="Ready to train?"
-          subtitle="Let's make today count"
+          subtitle="Keep it simple"
           pattern={headerPattern}
         />
 
-        {/* Stats Overview */}
-        <View style={styles.statsContainer}>
-          <Text style={styles.sectionTitle}>Today's Overview</Text>
-          <View style={styles.statsGrid}>
-            <StatCard
-              title="Workouts Today"
-              value={workoutStats.todayWorkouts}
-              icon="fitness"
-              style={styles.statCard}
-            />
-            <StatCard
-              title="This Week"
-              value={workoutStats.thisWeek}
-              icon="calendar"
-              style={styles.statCard}
-            />
-            <StatCard
-              title="Total Workouts"
-              value={workoutStats.totalWorkouts}
-              icon="trophy"
-              style={styles.statCard}
-            />
-            <StatCard
-              title="Streak"
-              value={`${workoutStats.streak} days`}
-              icon="flame"
-              style={styles.statCard}
-            />
-          </View>
-        </View>
-
-        {/* Recent Workout */}
-        {recentWorkout && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Last Workout</Text>
-            <View style={styles.recentWorkoutCard}>
-              <View style={styles.recentWorkoutHeader}>
-                <Text style={styles.recentWorkoutDate}>
-                  {new Date(recentWorkout.date).toLocaleDateString()}
-                </Text>
-                <Text style={styles.exerciseCount}>
-                  {recentWorkout.exercises.length} exercises
-                </Text>
-              </View>
-              <View style={styles.exerciseList}>
-                {recentWorkout.exercises.slice(0, 3).map((exercise, index) => (
-                  <Text key={index} style={styles.exerciseName}>
-                    • {exercise.name}
-                  </Text>
-                ))}
-                {recentWorkout.exercises.length > 3 && (
-                  <Text style={styles.moreExercises}>
-                    +{recentWorkout.exercises.length - 3} more
-                  </Text>
-                )}
-              </View>
-            </View>
-          </View>
-        )}
-
-        {/* Quick Actions */}
+        {/* Quick Actions (Simplified) */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Quick Actions</Text>
           <View style={styles.actionsGrid}>
@@ -142,17 +72,6 @@ const HomeScreen: React.FC<NavigationProps> = ({ navigation }) => {
               />
             ))}
           </View>
-        </View>
-
-        {/* Motivational Quote */}
-        <View style={styles.quoteCard}>
-          <View style={styles.quoteIcon}>
-            <Ionicons name="chatbubble-outline" size={24} color={COLORS.text.secondary} />
-          </View>
-          <Text style={styles.quoteText}>
-            "The only bad workout is the one that didn't happen."
-          </Text>
-          <Text style={styles.quoteAuthor}>- Unknown</Text>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -263,38 +182,10 @@ const styles = StyleSheet.create({
   actionCard: {
     width: (width - 60) / 2,
   },
-  quoteCard: {
-    backgroundColor: COLORS.surface,
-    margin: SPACING.xl,
-    padding: 25,
-    borderRadius: BORDER_RADIUS.lg,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    shadowColor: COLORS.shadow.color,
-    shadowOffset: COLORS.shadow.offset,
-    shadowOpacity: COLORS.shadow.opacity,
-    shadowRadius: COLORS.shadow.radius,
-    elevation: 1,
-  },
-  quoteIcon: {
-    marginBottom: SPACING.md,
-  },
-  quoteText: {
-    ...TYPOGRAPHY.body,
-    fontStyle: 'italic',
-    color: COLORS.text.primary,
-    textAlign: 'center',
-    lineHeight: 24,
-    marginBottom: SPACING.md,
-    fontWeight: '400',
-    letterSpacing: -0.2,
-  },
-  quoteAuthor: {
-    ...TYPOGRAPHY.bodySmall,
-    color: COLORS.text.secondary,
-    fontWeight: '500',
-  },
+  quoteCard: {},
+  quoteIcon: {},
+  quoteText: {},
+  quoteAuthor: {},
   errorContainer: {
     flex: 1,
     justifyContent: 'center',

@@ -21,10 +21,10 @@ export default function AppNavigator() {
 
           if (route.name === 'Home') {
             iconName = focused ? 'home' : 'home-outline';
-          } else if (route.name === 'Log') {
+          } else if (route.name === 'Create') {
             iconName = focused ? 'fitness' : 'fitness-outline';
-          } else if (route.name === 'Progress') {
-            iconName = focused ? 'trending-up' : 'trending-up-outline';
+          } else if (route.name === 'History') {
+            iconName = focused ? 'time' : 'time-outline';
           } else if (route.name === 'Settings') {
             iconName = focused ? 'settings' : 'settings-outline';
           }
@@ -63,17 +63,17 @@ export default function AppNavigator() {
         }}
       />
       <Tab.Screen 
-        name="Log" 
+        name="Create" 
         component={LogScreen}
         options={{
-          title: 'Log',
+          title: 'Create',
         }}
       />
       <Tab.Screen 
-        name="Progress" 
+        name="History" 
         component={ProgressScreen}
         options={{
-          title: 'Progress',
+          title: 'History',
         }}
       />
       

@@ -16,7 +16,7 @@ import { COLORS, SPACING, TYPOGRAPHY, BORDER_RADIUS } from '../constants';
 const { width } = Dimensions.get('window');
 
 export default function ProgressScreen() {
-  const { getWorkoutStats, getRecentWorkouts } = useWorkoutData();
+  const { getWorkoutStats, workoutLogs } = useWorkoutData();
   const [workoutStats, setWorkoutStats] = useState({
     totalWorkouts: 0,
     thisWeek: 0,
@@ -24,7 +24,7 @@ export default function ProgressScreen() {
     totalExercises: 0,
     averageWorkoutDuration: 0,
   });
-  const [recentWorkouts, setRecentWorkouts] = useState([]);
+  const [pastWorkouts, setPastWorkouts] = useState([] as any[]);
   const [selectedPeriod, setSelectedPeriod] = useState('week');
 
   useEffect(() => {
@@ -34,7 +34,8 @@ export default function ProgressScreen() {
   const loadProgressData = () => {
     const stats = getWorkoutStats();
     setWorkoutStats(stats);
-    setRecentWorkouts(getRecentWorkouts(5));
+    const all = Object.values(workoutLogs || {}).sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    setPastWorkouts(all);
   };
 
   const headerPattern = (
@@ -50,8 +51,8 @@ export default function ProgressScreen() {
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Header */}
         <Header
-          title="Progress"
-          subtitle="Track your fitness journey"
+          title="History"
+          subtitle="View past workouts"
           pattern={headerPattern}
         />
 
@@ -106,42 +107,23 @@ export default function ProgressScreen() {
           />
         </View>
 
-        {/* Recent Workouts */}
+        {/* Past Workouts */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Recent Workouts</Text>
-          {recentWorkouts.length > 0 ? (
-            recentWorkouts.map((workout, index) => (
+          <Text style={styles.sectionTitle}>Past Workouts</Text>
+          {pastWorkouts.length > 0 ? (
+            pastWorkouts.map((workout, index) => (
               <WorkoutCard key={index} workout={workout} style={styles.workoutCard} />
             ))
           ) : (
             <EmptyState
               icon="fitness-outline"
               title="No workouts yet"
-              subtitle="Start logging workouts to see your progress here"
+              subtitle="Start creating workouts to see them here"
             />
           )}
         </View>
 
-        {/* Achievements */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Achievements</Text>
-          <View style={styles.achievementsGrid}>
-            <View style={styles.achievementCard}>
-              <View style={styles.achievementIconContainer}>
-                <Ionicons name="trophy" size={24} color={COLORS.text.primary} />
-              </View>
-              <Text style={styles.achievementTitle}>First Workout</Text>
-              <Text style={styles.achievementDesc}>Complete your first workout</Text>
-            </View>
-            <View style={styles.achievementCard}>
-              <View style={styles.achievementIconContainer}>
-                <Ionicons name="flame" size={24} color={COLORS.text.primary} />
-              </View>
-              <Text style={styles.achievementTitle}>Streak Master</Text>
-              <Text style={styles.achievementDesc}>Workout 7 days in a row</Text>
-            </View>
-          </View>
-        </View>
+        {/* Achievements removed per simplification */}
       </ScrollView>
     </SafeAreaView>
   );

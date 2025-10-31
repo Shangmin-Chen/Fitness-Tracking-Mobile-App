@@ -11,12 +11,12 @@ import { Ionicons } from '@expo/vector-icons';
 import DraggableFlatList, { RenderItemParams } from 'react-native-draggable-flatlist';
 import { useWorkoutCreation, useWorkoutData } from '../hooks';
 import { Header, DraggableExerciseItem, EmptyState } from '../components';
+import ExerciseSelectionModal from '../components/workout/ExerciseSelectionModal';
 import { COLORS, SPACING, TYPOGRAPHY, BORDER_RADIUS } from '../constants';
 import { Exercise } from '../types';
 
 const LogScreen: React.FC = () => {
-  
-  
+  const [isExerciseModalVisible, setExerciseModalVisible] = useState(false);
   const {
     exercises,
     addExercise,
@@ -35,6 +35,9 @@ const LogScreen: React.FC = () => {
   const handleAddExercise = (exerciseName: string) => {
     addExercise(exerciseName);
   };
+
+  const openExerciseModal = () => setExerciseModalVisible(true);
+  const closeExerciseModal = () => setExerciseModalVisible(false);
 
   const handleAddSet = (exerciseId: string | number) => {
     addSet(exerciseId, { reps: 0, weight: 0 });
@@ -109,7 +112,7 @@ const LogScreen: React.FC = () => {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <Header
-        title="Create Workout"
+        title="Create New Workout"
         subtitle="Add exercises and sets"
       />
 
@@ -117,7 +120,7 @@ const LogScreen: React.FC = () => {
       <View style={styles.actionButtons}>
         <TouchableOpacity
           style={styles.addButton}
-          onPress={() => handleAddExercise('Custom Exercise')}
+          onPress={openExerciseModal}
         >
           <Ionicons name="add" size={18} color={COLORS.surface} />
           <Text style={styles.addButtonText}>Add Exercise</Text>
@@ -166,7 +169,12 @@ const LogScreen: React.FC = () => {
         )}
       </View>
 
-      
+      {/* Exercise DB Selection Modal */}
+      <ExerciseSelectionModal
+        visible={isExerciseModalVisible}
+        onClose={closeExerciseModal}
+        onSelectExercise={handleAddExercise}
+      />
     </SafeAreaView>
   );
 };
