@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -7,11 +7,13 @@ import {
   TouchableOpacity,
   FlatList,
   TextInput,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { EXERCISES, EXERCISE_CATEGORIES } from '../../constants';
 import { ExerciseInfo } from '../../types';
 import { COLORS, SPACING, TYPOGRAPHY, BORDER_RADIUS } from '../../constants';
+import { useExerciseData } from '../../hooks';
+import { getMuscleDisplayName, getEquipmentDisplayName } from '../../constants/exercises';
 
 interface ExerciseSelectionModalProps {
   visible: boolean;
@@ -25,53 +27,100 @@ const ExerciseSelectionModal: React.FC<ExerciseSelectionModalProps> = ({
   onSelectExercise,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [activeTab, setActiveTab] = useState<'popular' | 'recent' | 'all'>('popular');
 
+  // Fetch exercises from API
+  const { 
+    popularExercises,
+    recentExercises,
+    exercises,
+    loading,
+    addToRecent,
+  } = useExerciseData();
 
-  const filteredExercises = EXERCISES.filter(exercise => {
-    const matchesSearch = exercise.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         exercise.description.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategory === 'All' || exercise.category === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
+  // Get exercises based on active tab
+  const displayExercises = useMemo(() => {
+    if (searchQuery.trim()) {
+      return exercises.filter(exercise => {
+        const query = searchQuery.toLowerCase();
+        return (
+          exercise.name.toLowerCase().includes(query) ||
+          exercise.primaryMuscles?.some(m => m.toLowerCase().includes(query)) ||
+          exercise.equipment?.toLowerCase().includes(query)
+        );
+      });
+    }
 
-  const handleSelectExercise = (exerciseName: string) => {
-    onSelectExercise(exerciseName);
+    switch (activeTab) {
+      case 'recent':
+        return recentExercises;
+      case 'all':
+        return exercises;
+      case 'popular':
+      default:
+        return popularExercises;
+    }
+  }, [activeTab, searchQuery, popularExercises, recentExercises, exercises]);
+
+  const handleSelectExercise = (exercise: ExerciseInfo) => {
+    addToRecent(exercise.id);
+    onSelectExercise(exercise.name);
     onClose();
+    setSearchQuery(''); // Reset search
   };
 
-  const renderExerciseItem = ({ item }: { item: ExerciseInfo }) => (
-    <TouchableOpacity
-      style={styles.exerciseItem}
-      onPress={() => handleSelectExercise(item.name)}
-    >
-      <View style={styles.exerciseInfo}>
-        <Text style={styles.exerciseName}>{item.name}</Text>
-        <Text style={styles.exerciseDescription}>{item.description}</Text>
-        <View style={styles.exerciseMeta}>
-          <Text style={styles.exerciseCategory}>{item.category}</Text>
-          <Text style={styles.exerciseDifficulty}>{item.difficulty}</Text>
-        </View>
-      </View>
-      <Ionicons name="chevron-forward" size={20} color={COLORS.text.secondary} />
-    </TouchableOpacity>
-  );
-
-  const renderCategoryItem = ({ item }: { item: string }) => (
-    <TouchableOpacity
-      style={[
-        styles.categoryButton,
-        selectedCategory === item && styles.categoryButtonActive,
-      ]}
-      onPress={() => setSelectedCategory(item)}
-    >
-      <Text
-        style={[
-          styles.categoryButtonText,
-          selectedCategory === item && styles.categoryButtonTextActive,
-        ]}
+  const renderExerciseItem = ({ item }: { item: ExerciseInfo }) => {
+    const muscle = item.muscle || (item.primaryMuscles && item.primaryMuscles.length > 0 ? getMuscleDisplayName(item.primaryMuscles[0]) : 'Unknown');
+    
+    // Get icon based on category
+    const getCategoryIcon = () => {
+      switch (item.category) {
+        case 'Chest': return 'body-outline';
+        case 'Back': return 'git-pull-request-outline';
+        case 'Legs': return 'walk-outline';
+        case 'Shoulders': return 'triangle-outline';
+        case 'Arms': return 'fitness-outline';
+        case 'Core': return 'ellipse-outline';
+        case 'Cardio': return 'heart-outline';
+        default: return 'barbell-outline';
+      }
+    };
+    
+    return (
+      <TouchableOpacity
+        style={styles.exerciseItem}
+        onPress={() => handleSelectExercise(item)}
       >
-        {item}
+        <View style={styles.iconCircle}>
+          <Ionicons name={getCategoryIcon() as any} size={20} color={COLORS.info} />
+        </View>
+        
+        <View style={styles.exerciseInfo}>
+          <Text style={styles.exerciseName}>{item.name}</Text>
+          <View style={styles.metaRow}>
+            <Text style={styles.metaText}>{muscle}</Text>
+            {item.equipment && (
+              <>
+                <Text style={styles.metaDivider}>•</Text>
+                <Text style={styles.metaText}>{getEquipmentDisplayName(item.equipment)}</Text>
+              </>
+            )}
+          </View>
+        </View>
+        
+        <Ionicons name="add-circle" size={24} color={COLORS.info} />
+      </TouchableOpacity>
+    );
+  };
+
+  const renderTabButton = (tab: 'popular' | 'recent' | 'all', label: string, count?: number) => (
+    <TouchableOpacity
+      style={[styles.tabButton, activeTab === tab && styles.tabButtonActive]}
+      onPress={() => setActiveTab(tab)}
+    >
+      <Text style={[styles.tabButtonText, activeTab === tab && styles.tabButtonTextActive]}>
+        {label}
+        {count !== undefined && count > 0 && ` (${count})`}
       </Text>
     </TouchableOpacity>
   );
@@ -113,29 +162,58 @@ const ExerciseSelectionModal: React.FC<ExerciseSelectionModalProps> = ({
                 onChangeText={setSearchQuery}
                 placeholderTextColor={COLORS.text.disabled}
               />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity onPress={() => setSearchQuery('')}>
+                  <Ionicons name="close-circle" size={20} color={COLORS.text.secondary} />
+                </TouchableOpacity>
+              )}
             </View>
           </View>
 
-          {/* Category Filter */}
-          <View style={styles.categoryContainer}>
-            <FlatList
-              data={EXERCISE_CATEGORIES}
-              renderItem={renderCategoryItem}
-              keyExtractor={(item) => item}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.categoryList}
-            />
-          </View>
+          {/* Tabs */}
+          {!searchQuery && (
+            <View style={styles.tabsContainer}>
+              {renderTabButton('popular', 'Popular', popularExercises.length)}
+              {renderTabButton('recent', 'Recent', recentExercises.length)}
+              {renderTabButton('all', 'All', exercises.length)}
+            </View>
+          )}
+
+          {/* Exercise Count */}
+          {!loading && (
+            <View style={styles.countContainer}>
+              <Text style={styles.countText}>
+                {displayExercises.length} exercise{displayExercises.length !== 1 ? 's' : ''}
+              </Text>
+            </View>
+          )}
 
           {/* Exercise List */}
-          <FlatList
-            data={filteredExercises}
-            renderItem={renderExerciseItem}
-            keyExtractor={(item) => item.name}
-            style={styles.exerciseList}
-            showsVerticalScrollIndicator={false}
-          />
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={COLORS.info} />
+              <Text style={styles.loadingText}>Loading exercises...</Text>
+            </View>
+          ) : (
+            <FlatList
+              data={displayExercises}
+              renderItem={renderExerciseItem}
+              keyExtractor={(item) => item.id}
+              style={styles.exerciseList}
+              showsVerticalScrollIndicator={false}
+              ListEmptyComponent={
+                <View style={styles.emptyContainer}>
+                  <Ionicons name="search-outline" size={48} color={COLORS.text.disabled} />
+                  <Text style={styles.emptyText}>
+                    {searchQuery ? 'No exercises found' : 'No exercises yet'}
+                  </Text>
+                  <Text style={styles.emptySubtext}>
+                    {searchQuery ? 'Try a different search term' : 'Start using exercises to see them here'}
+                  </Text>
+                </View>
+              }
+            />
+          )}
         </TouchableOpacity>
       </TouchableOpacity>
     </RNModal>
@@ -145,23 +223,15 @@ const ExerciseSelectionModal: React.FC<ExerciseSelectionModalProps> = ({
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-end',
   },
   modal: {
     backgroundColor: COLORS.surface,
-    borderTopLeftRadius: BORDER_RADIUS.lg,
-    borderTopRightRadius: BORDER_RADIUS.lg,
-    height: '80%',
+    borderTopLeftRadius: BORDER_RADIUS.xl,
+    borderTopRightRadius: BORDER_RADIUS.xl,
+    height: '85%',
     paddingBottom: SPACING.xl,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: -2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -172,19 +242,20 @@ const styles = StyleSheet.create({
     borderBottomColor: COLORS.border,
   },
   modalTitle: {
-    ...TYPOGRAPHY.h4,
+    ...TYPOGRAPHY.h3,
     color: COLORS.text.primary,
-    fontWeight: '500',
+    fontWeight: '700',
   },
   searchContainer: {
     paddingHorizontal: SPACING.xl,
-    paddingVertical: SPACING.lg,
+    paddingTop: SPACING.lg,
+    paddingBottom: SPACING.md,
   },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.background,
-    borderRadius: BORDER_RADIUS.sm,
+    borderRadius: BORDER_RADIUS.lg,
     paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.md,
     borderWidth: 1,
@@ -196,37 +267,44 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.body,
     color: COLORS.text.primary,
   },
-  categoryContainer: {
-    paddingBottom: SPACING.lg,
-  },
-  categoryList: {
+  tabsContainer: {
+    flexDirection: 'row',
     paddingHorizontal: SPACING.xl,
+    paddingBottom: SPACING.md,
+    gap: SPACING.sm,
   },
-  categoryButton: {
+  tabButton: {
     paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.sm,
-    marginRight: SPACING.sm,
     backgroundColor: COLORS.background,
-    borderRadius: BORDER_RADIUS.sm,
+    borderRadius: BORDER_RADIUS.lg,
     borderWidth: 1,
     borderColor: COLORS.border,
   },
-  categoryButtonActive: {
+  tabButtonActive: {
     backgroundColor: COLORS.text.primary,
     borderColor: COLORS.text.primary,
   },
-  categoryButtonText: {
+  tabButtonText: {
     ...TYPOGRAPHY.bodySmall,
-    fontWeight: '400',
+    fontWeight: '600',
     color: COLORS.text.secondary,
   },
-  categoryButtonTextActive: {
+  tabButtonTextActive: {
     color: COLORS.surface,
+  },
+  countContainer: {
+    paddingHorizontal: SPACING.xl,
+    paddingBottom: SPACING.sm,
+  },
+  countText: {
+    ...TYPOGRAPHY.bodySmall,
+    color: COLORS.text.secondary,
+    fontWeight: '500',
   },
   exerciseList: {
     flex: 1,
     paddingHorizontal: SPACING.xl,
-    marginBottom: SPACING.lg,
   },
   exerciseItem: {
     flexDirection: 'row',
@@ -235,33 +313,66 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
+  iconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: `${COLORS.info}15`,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: SPACING.md,
+  },
   exerciseInfo: {
     flex: 1,
   },
   exerciseName: {
     ...TYPOGRAPHY.body,
-    fontWeight: '500',
+    fontWeight: '600',
     color: COLORS.text.primary,
     marginBottom: SPACING.xs,
   },
-  exerciseDescription: {
-    ...TYPOGRAPHY.bodySmall,
-    color: COLORS.text.secondary,
-    marginBottom: SPACING.xs,
-  },
-  exerciseMeta: {
+  metaRow: {
     flexDirection: 'row',
-    gap: SPACING.sm,
+    alignItems: 'center',
   },
-  exerciseCategory: {
+  metaText: {
     ...TYPOGRAPHY.bodySmall,
     color: COLORS.text.secondary,
-    fontWeight: '400',
+    fontSize: 13,
   },
-  exerciseDifficulty: {
+  metaDivider: {
     ...TYPOGRAPHY.bodySmall,
     color: COLORS.text.disabled,
-    fontWeight: '400',
+    marginHorizontal: SPACING.xs,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: SPACING.xl,
+  },
+  loadingText: {
+    ...TYPOGRAPHY.body,
+    marginTop: SPACING.lg,
+    color: COLORS.text.secondary,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: SPACING.xxxl * 2,
+  },
+  emptyText: {
+    ...TYPOGRAPHY.body,
+    marginTop: SPACING.lg,
+    color: COLORS.text.primary,
+    fontWeight: '600',
+  },
+  emptySubtext: {
+    ...TYPOGRAPHY.bodySmall,
+    marginTop: SPACING.xs,
+    color: COLORS.text.secondary,
+    textAlign: 'center',
   },
 });
 

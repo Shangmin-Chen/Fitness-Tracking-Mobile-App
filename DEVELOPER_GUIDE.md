@@ -40,6 +40,11 @@
 - Dashboard with workout overview and quick actions
 
 ### **Recent Changes**
+- **Exercise Database Integration**: Integrated Free Exercise DB API with 800+ exercises
+- **API Services**: Created exerciseService for fetching and caching exercises from GitHub
+- **Exercise Data Hook**: Added useExerciseData hook for managing exercise data with caching
+- **Enhanced Components**: Updated ExerciseCard with image support and rich metadata
+- **Updated Screens**: ExerciseLibraryScreen and ExerciseSelectionModal now use API data
 - **LogScreen**: Implemented as today's workout log with draggable exercise list
 - **Components**: Added DraggableExerciseItem and ExerciseSelectionModal for workout logging
 - **Hooks**: Added useWorkoutCreation hook for managing workout creation and exercise reordering
@@ -115,8 +120,11 @@ The app follows a **component-based architecture** with clear separation of conc
     ├── hooks/                       # Custom React hooks
     │   ├── usePerformance.ts        # Performance monitoring hook
     │   ├── useWorkoutData.ts        # Workout data management
-    │   ├── useTodayWorkout.ts       # Today's workout management
+    │   ├── useWorkoutCreation.ts    # Workout creation and exercise management
+    │   ├── useExerciseData.ts       # Exercise data from API with caching
     │   └── index.ts                 # Hooks export
+    ├── services/                    # API and external services
+    │   └── exerciseService.ts       # Free Exercise DB API integration
     ├── navigation/                  # Navigation configuration
     │   └── AppNavigator.tsx         # Main navigation setup
     ├── screens/                     # Screen components
@@ -457,13 +465,129 @@ const styles = StyleSheet.create({
 
 ## 📊 **Data Flow & API**
 
+### **Exercise Database Integration**
+
+#### **Overview**
+The app integrates with the **Free Exercise DB** (https://github.com/yuhonas/free-exercise-db), an open-source database containing 800+ exercises with images and detailed instructions.
+
+#### **Architecture**
+```
+┌─────────────────────┐
+│  useExerciseData    │ ← Hook (React Component Layer)
+│  (Custom Hook)      │
+└──────────┬──────────┘
+           │
+           ▼
+┌─────────────────────┐
+│  exerciseService    │ ← Service (Business Logic Layer)
+│  (API & Caching)    │
+└──────────┬──────────┘
+           │
+           ├─────────► GitHub API (exercises.json)
+           │
+           └─────────► AsyncStorage (Cache)
+```
+
+#### **Data Flow**
+1. **Initial Load**: Hook calls service → Service checks cache
+2. **Cache Hit**: Return cached data (if < 7 days old)
+3. **Cache Miss**: Fetch from GitHub API → Transform data → Cache → Return
+4. **Offline**: Return cached data as fallback
+5. **Manual Refresh**: Force fetch from API → Update cache
+
+#### **API Endpoint**
+- **URL**: `https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/dist/exercises.json`
+- **Format**: JSON array of exercise objects
+- **Images**: `https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/{imagePath}`
+
+#### **Caching Strategy**
+- **Duration**: 7 days
+- **Storage**: AsyncStorage with keys:
+  - `@2plates_exercise_cache`: Exercise data
+  - `@2plates_exercise_cache_timestamp`: Cache timestamp
+- **Invalidation**: Automatic after 7 days or manual refresh
+
+#### **Data Transformation**
+The service transforms API data to match app's schema:
+- Maps `primaryMuscles` → `category` (Chest, Back, Legs, etc.)
+- Maps `level` → `difficulty` (Beginner, Intermediate, Advanced)
+- Converts relative image paths to absolute URLs
+- Generates descriptions from instructions
+
+#### **Service Functions** (`src/services/exerciseService.ts`)
+```typescript
+// Main functions
+getExercises(forceRefresh?: boolean): Promise<ExerciseInfo[]>
+fetchExercisesFromAPI(): Promise<ExerciseInfo[]>
+fetchExercisesFromCache(): Promise<ExerciseInfo[] | null>
+saveExercisesToCache(exercises: ExerciseInfo[]): Promise<void>
+clearExerciseCache(): Promise<void>
+getCacheStats(): Promise<{ isCached, cacheAge, exerciseCount }>
+```
+
+#### **Hook Usage** (`useExerciseData`)
+```typescript
+const {
+  exercises,              // All exercises
+  loading,               // Loading state
+  error,                 // Error state
+  refreshExercises,      // Force refresh from API
+  getExercisesByCategory,  // Filter by category
+  getExercisesByMuscle,    // Filter by muscle group
+  getExercisesByEquipment, // Filter by equipment
+  searchExercises,         // Search exercises
+} = useExerciseData();
+```
+
+#### **Example Usage**
+```typescript
+// In a component
+const ExerciseLibraryScreen = () => {
+  const { exercises, loading, error } = useExerciseData();
+  
+  if (loading) return <LoadingState />;
+  if (error) return <ErrorState />;
+  
+  return (
+    <FlatList
+      data={exercises}
+      renderItem={({ item }) => <ExerciseCard exercise={item} />}
+    />
+  );
+};
+```
+
 ### **Data Storage**
 - **Primary Storage**: AsyncStorage (local device storage)
 - **Data Format**: JSON serialization
 - **Storage Keys**: Defined in `src/constants/app.ts`
+- **Exercise Cache**: Separate storage for exercise database
 
 ### **Data Models**
 ```typescript
+// Exercise Information (from API)
+interface ExerciseInfo {
+  // Core fields
+  id: string;
+  name: string;
+  category: ExerciseCategory;
+  
+  // Free Exercise DB fields
+  force?: 'pull' | 'push' | 'static' | null;
+  level?: 'beginner' | 'intermediate' | 'expert' | null;
+  mechanic?: 'compound' | 'isolation' | null;
+  equipment?: string | null;
+  primaryMuscles?: string[];
+  secondaryMuscles?: string[];
+  instructions?: string[];
+  images?: string[];
+  
+  // Legacy fields for backward compatibility
+  difficulty?: DifficultyLevel;
+  muscle?: string;
+  description?: string;
+}
+
 // Workout Data Structure
 interface Workout {
   id: ID;
@@ -895,7 +1019,11 @@ npx expo start --clear
 ### **Important Files to Remember**
 - **`src/types/index.ts`**: All TypeScript type definitions
 - **`src/constants/theme.ts`**: Colors, spacing, typography
-- **`src/hooks/useWorkoutData.ts`**: Main data management hook
+- **`src/constants/exercises.ts`**: Exercise categories and mapping utilities
+- **`src/services/exerciseService.ts`**: Exercise API integration and caching
+- **`src/hooks/useExerciseData.ts`**: Exercise data management hook
+- **`src/hooks/useWorkoutData.ts`**: Workout data management hook
+- **`src/hooks/useWorkoutCreation.ts`**: Workout creation and editing hook
 - **`src/navigation/AppNavigator.tsx`**: Navigation configuration
 - **`tsconfig.json`**: TypeScript configuration
 

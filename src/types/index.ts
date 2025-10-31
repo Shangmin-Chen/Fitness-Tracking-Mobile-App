@@ -61,13 +61,34 @@ export interface Workout {
 export type ExerciseCategory = 'All' | 'Chest' | 'Back' | 'Legs' | 'Shoulders' | 'Arms' | 'Core' | 'Cardio';
 export type DifficultyLevel = 'Beginner' | 'Intermediate' | 'Advanced';
 
+// Free Exercise DB types
+export type ForceType = 'pull' | 'push' | 'static' | null;
+export type ExerciseLevel = 'beginner' | 'intermediate' | 'expert' | null;
+export type MechanicType = 'compound' | 'isolation' | null;
+
 export interface ExerciseInfo {
+  // Core fields
+  id: string;
   name: string;
   category: ExerciseCategory;
-  difficulty: DifficultyLevel;
-  muscle: string;
-  description: string;
+  
+  // Free Exercise DB fields
+  force?: ForceType;
+  level?: ExerciseLevel;
+  mechanic?: MechanicType;
+  equipment?: string | null;
+  primaryMuscles?: string[];
+  secondaryMuscles?: string[];
+  instructions?: string[];
+  images?: string[];
+  
+  // Legacy fields for backward compatibility
+  difficulty?: DifficultyLevel;
+  muscle?: string;
+  description?: string;
 }
+
+// (removed) Exercise API response and useExerciseData types
 
 // Navigation types
 export interface NavigationProps {

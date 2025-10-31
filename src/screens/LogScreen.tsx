@@ -10,12 +10,12 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import DraggableFlatList, { RenderItemParams } from 'react-native-draggable-flatlist';
 import { useWorkoutCreation, useWorkoutData } from '../hooks';
-import { Header, DraggableExerciseItem, ExerciseSelectionModal, EmptyState } from '../components';
+import { Header, DraggableExerciseItem, EmptyState } from '../components';
 import { COLORS, SPACING, TYPOGRAPHY, BORDER_RADIUS } from '../constants';
 import { Exercise } from '../types';
 
 const LogScreen: React.FC = () => {
-  const [showExerciseSelection, setShowExerciseSelection] = useState(false);
+  
   
   const {
     exercises,
@@ -117,7 +117,7 @@ const LogScreen: React.FC = () => {
       <View style={styles.actionButtons}>
         <TouchableOpacity
           style={styles.addButton}
-          onPress={() => setShowExerciseSelection(true)}
+          onPress={() => handleAddExercise('Custom Exercise')}
         >
           <Ionicons name="add" size={18} color={COLORS.surface} />
           <Text style={styles.addButtonText}>Add Exercise</Text>
@@ -166,12 +166,7 @@ const LogScreen: React.FC = () => {
         )}
       </View>
 
-      {/* Exercise Selection Modal */}
-      <ExerciseSelectionModal
-        visible={showExerciseSelection}
-        onClose={() => setShowExerciseSelection(false)}
-        onSelectExercise={handleAddExercise}
-      />
+      
     </SafeAreaView>
   );
 };

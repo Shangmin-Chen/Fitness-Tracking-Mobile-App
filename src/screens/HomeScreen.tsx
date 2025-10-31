@@ -30,12 +30,6 @@ const HomeScreen: React.FC<NavigationProps> = ({ navigation }) => {
       onPress: () => navigation.navigate('Progress'),
     },
     {
-      title: 'Exercise Library',
-      subtitle: 'Browse exercise database',
-      icon: 'library',
-      onPress: () => navigation.navigate('Library'),
-    },
-    {
       title: 'Templates',
       subtitle: 'Use saved workout routines',
       icon: 'copy',

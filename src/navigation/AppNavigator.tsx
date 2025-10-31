@@ -6,7 +6,6 @@ import { Platform } from 'react-native';
 import HomeScreen from '../screens/HomeScreen';
 import LogScreen from '../screens/LogScreen';
 import ProgressScreen from '../screens/ProgressScreen';
-import ExerciseLibraryScreen from '../screens/ExerciseLibraryScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import { COLORS } from '../constants';
 
@@ -26,8 +25,6 @@ export default function AppNavigator() {
             iconName = focused ? 'fitness' : 'fitness-outline';
           } else if (route.name === 'Progress') {
             iconName = focused ? 'trending-up' : 'trending-up-outline';
-          } else if (route.name === 'Library') {
-            iconName = focused ? 'library' : 'library-outline';
           } else if (route.name === 'Settings') {
             iconName = focused ? 'settings' : 'settings-outline';
           }
@@ -79,13 +76,7 @@ export default function AppNavigator() {
           title: 'Progress',
         }}
       />
-      <Tab.Screen 
-        name="Library" 
-        component={ExerciseLibraryScreen}
-        options={{
-          title: 'Library',
-        }}
-      />
+      
       <Tab.Screen 
         name="Settings" 
         component={SettingsScreen}
